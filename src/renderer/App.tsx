@@ -8,11 +8,13 @@ import { ProfileGate } from './components/ProfileGate'
 import { QuickStats } from './components/QuickStats'
 import { ReminderList } from './components/ReminderList'
 import { TaskList } from './components/TaskList'
+import { UpdateBanner } from './components/UpdateBanner'
 import { Welcome } from './components/Welcome'
 import type { ReminderDraft, TaskDraft } from './domain/model'
 import { groupTasksByDay, plannerStats, sortReminders } from './domain/model'
 import { useFocusSession } from './hooks/useFocusSession'
 import { usePlanner } from './hooks/usePlanner'
+import { useUpdates } from './hooks/useUpdates'
 import { todayISO } from './lib/dates'
 import type { Reminder, Task } from './storage/types'
 
@@ -46,6 +48,10 @@ export default function App() {
   // session keeps its plan, its remaining time and its running state while the
   // user is looking at Home or the Profile.
   const timer = useFocusSession({ onSessionResult: handleSessionResult })
+
+  // The one piece of state about the app rather than the document. It is a no-op
+  // in a plain browser, which is what keeps the planner runnable there.
+  const updates = useUpdates()
 
   // The document decides which screen opens: unreadable until it loads, and the
   // onboarding gate while it holds no name.
@@ -107,6 +113,14 @@ export default function App() {
       {view === 'home' ? (
         <main className="planner-grid">
           <div className="planner-main">
+            {updates.state ? (
+              <UpdateBanner
+                state={updates.state}
+                onInstall={updates.install}
+                onDismiss={updates.dismiss}
+              />
+            ) : null}
+
             <Welcome name={planner.profile.name} />
 
             <QuickStats stats={stats} now={now} />

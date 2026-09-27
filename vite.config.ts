@@ -15,7 +15,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['src/renderer/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx,js}'],
     setupFiles: ['./src/renderer/test-setup.ts'],
     restoreMocks: true,
   },

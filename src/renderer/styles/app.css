@@ -352,6 +352,52 @@
   box-shadow: inset 0 -2px 0 currentColor;
 }
 
+/* ----------------------------------------------------------- update banner */
+/* The one band that reports something the user did not ask about, so it reuses
+   the composer's and the Profile's outlined treatment rather than inventing a
+   one. It is a block in the flow and not a toast: the system has no backdrop and
+   no layer, and a notice that floated over the planner would be a new layer
+   invented for a single message. */
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  padding: var(--spacing-md);
+  border-radius: var(--rounded-lg);
+  background: var(--color-canvas);
+  box-shadow: var(--elevation-hairline);
+}
+
+.update-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.update-banner__title {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+
+.update-banner__note {
+  font: var(--type-body-sm);
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+/* The controls keep their size rather than being squeezed by a long version
+   string, and they wrap under the body rather than overflowing on a narrow
+   window. */
+.update-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex: 0 0 auto;
+}
+
 /* ---------------------------------------------------------------- welcome */
 /* A heading band, not a card: no panel, no border, no padding. The greeting is
    supporting information, so the title keeps the ink and the greeting does not.

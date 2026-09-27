@@ -28,7 +28,12 @@ was out of scope for the three-view work below, so the artifacts predate it.
 | Tests | Vitest + jsdom | 5.0.2 / 30.1.1 | Shares Vite's transform pipeline, so no extra build config. |
 | DOM assertions | Testing Library | RTL 16.3.3 | Queries by role/label, matching how a user reads the screen. |
 | Packaging | electron-builder | 26.15.3 | Emits an NSIS installer and a portable binary. |
-| Runtime dependencies | none | — | Every package above is a devDependency; the shipped app has an empty tree. |
+| Auto-update | electron-updater | 6.8.9 | Enables checking GitHub Releases for updates and installing them. The project's first real runtime dependency, added deliberately. |
+
+Every package above is a devDependency except `electron-updater`, and that one
+is a deliberate exception: it is the only thing in the shipped app that needs to
+exist at runtime, and it exists in the **main** process, not the renderer. The
+renderer's own bundle is still dependency-free.
 
 Deliberately **not** used, and why:
 
@@ -60,10 +65,16 @@ npm run dev:desktop
       │                     nodeIntegration: false, preload:        │
       │                     src/preload/index.cjs }                  │
       │   loads dist/index.html  (dev: http://localhost:5273)       │
+      │                                                             │
+      │   updater.js ──once per launch──> GET                       │
+      │      github.com/<owner>/<repo>/releases.atom                │
+      │        update-available / update-downloaded ──> IPC ──┐     │
+      │        error ──> planner-error.log only              │     │
       └─────────────────────────────┬──────────────────────────────┘
                                     │ contextBridge
       ┌─────────────────────────────┴──────────────────────────────┐
       │  RENDERER  window.planner = { load, save }                  │
+      │           window.updates  = { onStatus, install }           │
       │                                                             │
       │   usePlanner ──load()──> IPC ──> dataFile.js ──>            │
       │      │                              userData/               │
@@ -75,6 +86,8 @@ npm run dev:desktop
       │      │                                                    │
       │      └── 300 ms debounce ──save()──> IPC ──> dataFile.js    │
       │                                                             │
+      │   useUpdates <──onStatus()── UpdateBanner (Home only) <──────┘
+      │                                                             │
         │   App ──> domain/model.ts  (normalize, sort, group)         │
         │        ──> domain/focusSession.ts (pure session planning)   │
         │        ──> lib/dates.ts, lib/relativeTime.ts                │
@@ -82,6 +95,11 @@ npm run dev:desktop
         │        ──> components/*    (styles/tokens.css only)         │
        └─────────────────────────────────────────────────────────────┘
 ```
+
+`window.updates` carries no network capability, and there is no other. The
+renderer's bundle is dependency-free and its only privileged surface is the two
+ports below, so "can this app phone home?" is answered by reading
+`src/preload/index.cjs` and finding no `fetch`, no `http`, and no update check.
 
 `App` owns two pieces of state that sit above the three views: which view is on
 screen (`home`, `profile`, or `focus`) and the focus session's clock. The view is
@@ -144,6 +162,8 @@ components/  App.tsx  ──>  domain/  ──>  storage/types
 
      └──>  hooks/useFocusSession ──>  domain/focusSession.ts  (no storage, ever)
 
+     └──>  hooks/useUpdates ──>  window.updates  (two functions, no network)
+
 hooks/useDismiss  ──>  (DOM events only, shared by both pickers)
 
 lib/  dates, relativeTime, log  ──>  (leaf utilities, no internal deps)
@@ -180,21 +200,25 @@ lib/  dates, relativeTime, log  ──>  (leaf utilities, no internal deps)
 | `src/renderer/components/QuickStats.tsx` | 44 | The four derived counts above the tasks they describe. Colourless by design. |
 | `src/renderer/components/Profile.tsx` | 169 | The name, streak, focus figures, comparison copy, and the thirty-day heatmap. A view rather than a layer: no backdrop, no `role="dialog"`, no Close, and no internal scroll of its own. |
 | `src/renderer/components/ProfileGate.tsx` | 60 | First-run onboarding: one field for a name, then the planner. Short-circuits `App` before the shell, so the bar never renders for it. |
-| `src/renderer/App.tsx` | 161 | Composition: the current view, the lifted focus-session clock, the three view bodies, the composer open/close state, and the navigation bar. |
+| `src/renderer/components/UpdateBanner.tsx` | 42 | The update notice: a title, the version sentence, and — only once the download is finished — `Install and restart` plus a dismiss. `role="status"`, and a no-op when the bridge is absent. |
+| `src/renderer/hooks/useUpdates.ts` | 56 | Subscribes to `window.updates`, holds the dismissal, and returns the one action the banner offers. No polling and no fetch. |
+| `src/renderer/App.tsx` | 175 | Composition: the current view, the lifted focus-session clock, the three view bodies, the composer open/close state, the update banner above Home, and the navigation bar. |
 | `src/renderer/main.tsx` | 18 | React mount. |
 | `src/renderer/styles/tokens.css` | 121 | The only place a hex, radius, or spacing value may appear. |
 | `src/renderer/styles/base.css` | 59 | Reset, page shell, and font stack. |
 | `src/renderer/styles/ui.css` | 596 | Reusable component classes, including the pickers, the stepper rows, the wheel columns, and the choice groups. |
-| `src/renderer/styles/app.css` | 909 | Screen composition — the shell, the navigation bar, the session panel, the 7:3 grid, the Profile, the columns, the composer — and the responsive breakpoints. |
-| `src/renderer/styles.test.ts` | 571 | Enforces the token rules, the session panel's five faces, its length wheels, the summary card, the column header's single row, the navigation bar's fixed treatment, the Profile's lack of a layer, and keeps `DESIGN.md` in sync with `tokens.css`. |
-| `src/main/index.js` | 95 | Window lifecycle, single-instance lock, navigation lockdown, and the two IPC handlers. |
+| `src/renderer/styles/app.css` | 955 | Screen composition — the shell, the update banner, the navigation bar, the session panel, the 7:3 grid, the Profile, the columns, the composer — and the responsive breakpoints. |
+| `src/renderer/styles.test.ts` | 595 | Enforces the token rules, the session panel's five faces, its length wheels, the summary card, the column header's single row, the navigation bar's fixed treatment, the Profile's lack of a layer, the update banner's in-flow treatment, and keeps `DESIGN.md` in sync with `tokens.css`. |
+| `src/main/index.js` | 101 | Window lifecycle, single-instance lock, navigation lockdown, the two storage IPC handlers, and the one call that starts the update check. |
+| `src/main/updater.js` | 121 | The whole update path: one `checkForUpdates` per launch, the two state events, silent de-duplicated failure logging, the replay for a late subscriber, and the install request. |
+| `src/main/updater.test.js` | 194 | The updater contract, with `electron-updater` mocked and the module re-imported per test. |
 | `src/main/dataFile.js` | 77 | Atomic read, write, and corrupt-file quarantine. |
 | `src/main/logger.js` | 82 | Appends to `planner-error.log` in `userData`; never logs content. |
-| `src/preload/index.cjs` | 13 | Exposes exactly `load` and `save`. |
+| `src/preload/index.cjs` | 44 | Exposes exactly four functions: `window.planner` (`load`, `save`) and `window.updates` (`onStatus`, `install`). |
 | `scripts/dev-desktop.mjs` | 31 | Starts Vite via its Node API, then spawns Electron. |
 | `scripts/make-icon.mjs` | 198 | Draws and encodes `build/icon.ico` from the accent token. |
 | `build/icon.ico` | 5 KB | Seven sizes, 16 through 256. Committed, because electron-builder needs it. |
-| `DESIGN.md` | 1776 | The authoritative design-system document: every token, every component, and the rules. |
+| `DESIGN.md` | 1846 | The authoritative design-system document: every token, every component, and the rules. |
 | `public/assets/focus-session/` | 5 files | Local GIF assets for the Focus Session state machine (`idle.gif`, `focus.gif`, `break.gif`, `complete.gif`) and the completion sound (`session-complete.mp3`). |
 
 ### Design System
@@ -358,20 +382,48 @@ Past reminders are never hidden. They keep their place in the list and gain an
 ### Security posture
 
 - `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`.
-- The preload bridge exposes two functions and nothing else. No `ipcRenderer`,
-  no `require`, no filesystem handle reaches the renderer.
+- The preload bridge exposes four functions across two objects and nothing else.
+  No `ipcRenderer`, no `require`, no filesystem handle reaches the renderer.
 - The renderer has zero runtime dependencies, so there is no third-party
-  JavaScript running with access to the UI.
+  JavaScript running with access to the UI. `electron-updater` is a **main**
+  process dependency and its code never reaches the renderer bundle.
 - Navigation and `window.open` are refused in the main process, so the app
   cannot be navigated to remote content.
 - No `nodeIntegration` fallback, no remote module, no eval of stored content.
 
+### Network posture
+
+The app makes no requests except the one update check, and that check is the
+whole of its network surface:
+
+- **Outbound HTTPS to `api.github.com` / `github.com` only** — the Releases feed
+  behind the update check, and the installer download it may follow. Nothing is
+  sent except the OS's own user agent and standard TLS handshake data. No
+  request identifies the user, their document, or their machine beyond what any
+  HTTPS connection to GitHub necessarily exposes.
+- **Once per launch, no more.** The check is made after the window exists, is
+  never awaited, and is never repeated: no interval, no re-check on focus, and
+  no manual trigger. Unpackaged runs skip it entirely.
+- **Nothing is uploaded and nothing is read from the app.** There is no
+  telemetry, no analytics, no crash reporting, and no remote document storage.
+  The planner's data is a local JSON file in `userData` and never leaves the
+  machine.
+- **Failure is silent.** A failed check writes one line to
+  `planner-error.log` and nothing else. The window does not change, nothing is
+  shown to the user, and the app keeps working with no network at all.
+- **Installation is always the user's decision.** The download may start on its
+  own, but `autoInstallOnAppQuit` is off, so nothing is ever installed or
+  applied until the user presses `Install and restart` in the banner.
+
 ### Test coverage
 
-337 tests across twelve files, all passing. The paused-time cases assert that
+358 tests across fourteen files, all passing. The paused-time cases assert that
 paused seconds are banked in their own column and never as focus, that a
 paused-then-resumed block banks its focus exactly once, and that Pause, Resume,
-and Skip all work on a manual break.
+and Skip all work on a manual break. The updater cases assert that one launch
+produces one check, that a failure reaches the log exactly once and the window
+not at all, and that installation happens only on request and only once the
+download is finished.
 
 | File | Tests | Covers |
 | --- | --- | --- |
@@ -379,13 +431,15 @@ and Skip all work on a manual break.
 | `domain/model.test.ts` | 25 | Normalization, enums, grouping, Today marking, and comparator totality. |
 | `domain/productivity.test.ts` | 26 | The stored Focus Session record, its merge, and every derived day figure. |
 | `lib/dates.test.ts` | 37 | Leap days, month rollovers, ISO validation, 12-hour formatting, the 42-cell grid, and the clock helpers. |
-| `App.test.tsx` | 63 | Both user flows end to end, screen composition, the navigation bar and the three views, a running session surviving navigation, the Profile as a view, the session panel's five faces, the length wheels, the reset confirmation, the column headers, ordering, and persistence. |
+| `App.test.tsx` | 65 | Both user flows end to end, screen composition, the navigation bar and the three views, a running session surviving navigation, the Profile as a view, the session panel's five faces, the length wheels, the reset confirmation, the column headers, ordering, persistence, and the update banner appearing on Home alone. |
 | `domain/focusSession.test.ts` | 37 | Block splitting, the fourth-break rule, trimming, progress, formatting, the session-length stepper, the manual-break stepper's five minute grid, and the focus-block count. |
 | `hooks/useFocusSession.test.ts` | 42 | The state machine alone: when a clock starts and stops, absolute-deadline countdowns, auto-advance, the manual break, pausing and skipping a manual break, paused-time accounting in its own column, and when the run totals are banked or forgotten. |
 | `components/FocusSessionTimer.test.tsx` | 11 | The GIF state mapping in the DOM, the manual break reading as a break, Pause and Skip staying live on a manual break, the paused counter appearing only while paused, the summary's three figures, and the summary plus `Done`. A local harness owns the clock, since the panel only renders one. |
 | `components/pickers.test.tsx` | 19 | No native inputs, the month grid, month paging, dismissal, and every stepper. |
+| `components/UpdateBanner.test.tsx` | 7 | The banner's two states, that no install is possible before the download finishes, that install fires only on a press, that a dismissal stays dismissed, and that no bridge at all is a no-op. |
 | `lib/relativeTime.test.ts` | 15 | Every countdown bucket, past and future. |
-| `styles.test.ts` | 31 | Design-system enforcement, the 7:3 grid, the ring's geometry, the idle face's centred column, the summary card's tokens, the length wheels, the column header's single row, the choice groups' minimal treatment, the bar's fixed treatment, the Profile having no layer, and `DESIGN.md` staying in sync with the tokens. |
+| `styles.test.ts` | 32 | Design-system enforcement, the 7:3 grid, the ring's geometry, the idle face's centred column, the summary card's tokens, the length wheels, the column header's single row, the choice groups' minimal treatment, the bar's fixed treatment, the Profile having no layer, the update banner being a block in the flow, and `DESIGN.md` staying in sync with the tokens. |
+| `main/updater.test.js` | 11 | The one-check-per-launch guard, the unpackaged skip, both state transitions, the replay for a late subscriber, install only on request and only when downloaded, and a failed check reaching the log once while telling the window nothing. |
 | `storage/web.test.ts` | 6 | Round trip, corrupt input, and a rejected write. |
 
 The integration suite asserts on roles and labels rather than CSS classes, so it
@@ -402,10 +456,37 @@ clock.
 | `Personal Planner Setup 1.0.0.exe` | 106.2 MB | NSIS installer, per-user, lets the user pick a folder. |
 | `Personal Planner 1.0.0.exe` | 106.0 MB | Portable, runs from anywhere with no install. |
 | `Personal Planner 1.0.0.exe.blockmap` | 0.1 MB | Differential-update metadata. |
-| `win-unpacked/` | — | Unpacked build used for the launch smoke test. |
+| `latest.yml` | 0.1 MB | The release manifest `electron-updater` reads: version, installer URL, `sha512`, and size. Written by the publisher, not by `--publish=never`. |
+| `win-unpacked/` | — | Unpacked build used for the launch smoke test. Carries `resources/app-update.yml`, which points the updater at `Gadoo916/Personal-Planner` on GitHub. |
+
+`electron-updater` and its transitive dependencies are the only packages in
+`app.asar`'s `node_modules`, because they are the only production
+dependencies. The `files` allowlist keeps them in: electron-builder collects
+production dependencies for the main process and adds them to the asar
+independently of the `files` globs.
 
 Data lives in `%APPDATA%\Personal Planner\planner-data.json`, created on the
 first change rather than at first launch.
+
+### Publishing a release
+
+Deliberately manual, and there is no CI that can do it by accident:
+
+```
+npm run publish     # electron-builder --win --publish=always
+```
+
+This builds both Windows targets, uploads the installer, the portable binary,
+the block map, and `latest.yml` as a GitHub Release, and needs a `GH_TOKEN`
+in the environment with write access to the repository. The first release is the
+one that makes an update visible to an installed copy; until it exists, a
+launch logs a single failed check and carries on.
+
+The releases feed must be reachable. A **private** repository returns 404 to an
+unauthenticated feed reader, so the app would check every launch and find
+nothing; publishing to a private repo additionally needs `private: true` in the
+`build.publish` block and a token baked into the installed app, which is a
+trade this project has not made.
 
 ### Verification commands
 
@@ -416,7 +497,13 @@ npm test            # vitest run
 npm run verify      # all three
 npm run build       # vite build
 npm run dist        # build + NSIS installer + portable binary
+npm run publish     # the same, and upload a GitHub Release (manual, on purpose)
 ```
+
+`npm run verify` is the gate a change has to pass: 358 tests, lint, and both
+TypeScript projects, including `styles.test.ts`, which fails the build if
+`DESIGN.md` and `tokens.css` drift apart or if a raw colour, radius, or shadow
+appears anywhere else.
 
 One environment caveat, not a project defect: on this machine an AV or indexer
 holds a handle on the freshly extracted `release\win-unpacked.tmp` tree, so the
@@ -428,8 +515,62 @@ workaround is to build to a temporary output directory and copy the artifacts in
 npx electron-builder --win --config.directories.output=%TEMP%\pp-dist
 ```
 
-The committed artifacts in `release/` were produced that way and the unpacked
-build passes the launch smoke test.
+`release/` is gitignored, so nothing here is committed; the artifacts in it are
+whatever was last built on this machine, and they predate the updater. The
+update path is verified against a throwaway build staged in a temporary
+directory instead.
+
+### Offline launch smoke test
+
+The update path was verified against a **real packaged build**, not a dev run,
+because the whole point is what a user receives:
+
+1. `npx electron-builder --win --config.directories.output=$env:TEMP\pp-dist-updater`
+   produced the installer, the portable binary, `latest.yml`, and
+   `win-unpacked/resources/app-update.yml` naming `Gadoo916/Personal-Planner`.
+   `npx asar list` on `app.asar` shows `electron-updater` and its fifteen
+   transitive dependencies as the only `node_modules` present.
+2. `resources/app-update.yml` was pointed at a repository that does not exist, so
+   the check fails exactly as it would with no network, and the build was
+   launched with `--user-data-dir` in a temporary directory to keep the real
+   user data untouched.
+3. The window opened, was titled `Personal Planner`, and stayed responsive. Its
+   accessibility tree showed the onboarding view, and after driving the name
+   field and `Start planning` through UI Automation it showed the planner
+   itself: the greeting, Quick stats, and the Tasks, Reminders, and Views
+   regions. The whole app worked.
+4. `planner-error.log` held **one** line, `[planner] update.failed` with the
+   HTTP 404. No dialog, no banner, no degraded screen — and one attempt, not
+   one per window or per minute, which is what "exactly once per launch" means
+   in practice.
+
+An earlier run of the same test wrote that line **twice**, because a failed
+check arrives both as an `error` event and as a rejected promise carrying the
+same `Error`. The service now de-duplicates by identity, and two tests pin it:
+one failure is one line whichever half lands first, and a genuinely different
+second failure is still reported.
+
+The **happy** path was verified the same way, against a feed that cannot reach a
+real release. A throwaway HTTP server was pointed at by a temporary
+`resources/app-update.yml` using the `generic` provider, offering version 9.9.9
+and a 1.4 KB file called `Personal Planner Setup 9.9.9.exe` that is not an
+installer and was never run. The packaged app was driven through onboarding via
+UI Automation, and Home then read:
+
+```
+Text   :: Update ready
+Text   :: Version 9.9.9 is ready. Restart to install it.
+Button :: Install and restart
+Button :: Dismiss the update notice
+Text   :: Welcome, Smoke Test
+```
+
+That is the whole chain in a real build: feed parsed, artefact downloaded,
+`update-downloaded` in the main process, IPC, preload, hook, banner, and the
+banner first on the screen. `planner-error.log` was empty, because nothing
+failed. Invoking `Dismiss the update notice` removed the banner and left the
+app running. `Install and restart` was deliberately never invoked, so no update
+was installed and no process was quit by this test.
 
 ## [ORPHANS & PENDING]
 
@@ -478,7 +619,13 @@ requirement is implemented and covered:
 | Column header is the title and its own Add, no counter | `PlannerColumn.tsx`, `.planner-column__header` | `App.test.tsx`, `styles.test.ts` |
 | Local-first persistence, survives restart | `dataFile.js`, `usePlanner` | `App.test.tsx` |
 | Documented design system, no token drift | `DESIGN.md`, `tokens.css` | `styles.test.ts` |
-| No network, no backend | — | verified by the dependency-free build |
+| The app's only network access is one GitHub Releases check | `updater.js`, `build.publish` | `main/updater.test.js` |
+| One check per launch, never repeated, never blocking | `started` guard in `updater.js` | `main/updater.test.js` |
+| Nothing is installed until the user asks | `autoInstallOnAppQuit = false` | `main/updater.test.js` |
+| A failed check is logged once and shown to nobody | `reportFailure` in `updater.js` | `main/updater.test.js`, offline smoke test |
+| The banner is a block at the top of Home, not a toast or a dialog | `UpdateBanner.tsx`, `.update-banner` | `App.test.tsx`, `styles.test.ts` |
+| A dismissed banner stays dismissed for the launch | `useUpdates` | `UpdateBanner.test.tsx` |
+| The renderer gains no network capability | `index.cjs`, `global.d.ts` | `updater.test.ts`, `main/updater.test.js` |
 
 Known non-goals, decided deliberately rather than deferred: no sync or
 accounts, no notifications outside the app, no subtasks or tags, no date-range

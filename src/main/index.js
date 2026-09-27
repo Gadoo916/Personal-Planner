@@ -3,10 +3,11 @@ import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { readData, writeData } from './dataFile.js'
 import { log } from './logger.js'
+import { createUpdateService } from './updater.js'
 
 /**
- * ESM main process, unbundled. It has no npm dependencies, so there is nothing
- * for a bundler to do here.
+ * ESM main process, unbundled. The only npm dependency is electron-updater,
+ * which the packager copies in; everything else here is plain JavaScript.
  */
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -82,7 +83,14 @@ if (!app.requestSingleInstanceLock()) {
     await log.init()
     log.info('app.boot', { mode: isDev ? 'dev' : 'packaged' })
     registerIpc()
+
+    // Built before the window so its IPC handlers are already answering by the
+    // time the renderer asks for the current state, but only *started* after the
+    // window exists: one check per launch, never awaited, so nothing about it can
+    // hold up the first frame.
+    const updates = createUpdateService(() => mainWindow)
     createWindow()
+    updates.start()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()

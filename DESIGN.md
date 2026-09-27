@@ -33,7 +33,7 @@ bar that is on screen for all three.
 
 | View | What it holds |
 | --- | --- |
-| Home | The planner: the Tasks column and the Reminders column |
+| Home | The planner: the Tasks column and the Reminders column, and the [update banner](#update-banner) above them |
 | Profile | The productivity report, which used to be an anchored overlay over Home and is now a view of its own |
 | Focus Session | **Nothing but the [session panel](#session-timer)**, and the nav bar |
 
@@ -59,6 +59,7 @@ from one of the three views or from the nav bar.
 | `src/renderer/styles/app.css` | Composition of the planner screen, plus responsive rules. |
 | `src/renderer/components/ui.tsx` | React primitives that map onto `ui.css` classes. |
 | `src/renderer/components/BottomNavigation.tsx` | The three-item bar, and the only writer of the current view. |
+| `src/renderer/components/UpdateBanner.tsx` | The update notice at the top of Home, and the only writer of `Install and restart`. |
 | `src/renderer/styles.test.ts` | Enforces this document against the code. |
 
 ---
@@ -430,6 +431,71 @@ border, no padding — because it is a heading band, not a card.
   headers own those, see [Planner Layout](#planner-layout).
 - Onboarding renders its own `.app-title` in the same step. That is the same
   class used twice across two mutually exclusive surfaces, not two titles.
+
+### Update Banner
+
+**Purpose.** Say that a new version exists, and offer to install it. It is the one
+piece of the app that reports something the user did not ask about, so it is also
+the one piece that has to be quiet, dismissible, and impossible to mistake for
+something that needs doing now.
+
+**Visual structure.** A `.update-banner` block, the first child of the Home view's
+wide track and above the welcome band, so it is the first thing on screen when it
+is there and costs the stack nothing when it is not. It reuses the composer's and
+the Profile's outlined treatment rather than inventing one: `flex` row,
+`align-items: center`, `gap: --spacing-sm`, `flex-wrap: wrap`, padding
+`--spacing-md`, radius `--rounded-lg`, background `--color-canvas`,
+`--elevation-hairline`. It is a **block in the flow, not a toast**: no
+`position: fixed`, no overlay, no backdrop, because the system has none of those
+and a notice that floats over the planner would be a new layer invented for one
+message.
+
+- **Body** — `.update-banner__body`, a flex column, `gap: --spacing-xxs`,
+  `flex: 1 1 auto`, `min-width: 0`, so a long version string wraps instead of
+  pushing the controls off the row.
+- **Title** — `.update-banner__title`, `--type-title-md` in `--color-ink`. A noun:
+  `Update available` or `Update ready`.
+- **Note** — `.update-banner__note`, `--type-body-sm` in `--color-muted`: one
+  sentence, the version number and what is happening to it.
+- **Actions** — `.update-banner__actions`, a flex row, `gap: --spacing-xs`,
+  `flex: 0 0 auto`. A primary `Button` and one `IconButton`; nothing else.
+
+**States.**
+
+| State | Title | Note | Action |
+| --- | --- | --- | --- |
+| Found, still downloading | `Update available` | `Version 1.1.0 is downloading.` | dismiss only |
+| Ready to install | `Update ready` | `Version 1.1.0 is ready. Restart to install it.` | `Install and restart`, then dismiss |
+| Closed | — | — | dismissed for the rest of the launch |
+
+The banner is a `role="status"` region, so a download finishing announces itself
+without anything moving.
+
+**Usage rules.**
+
+- **Nothing is installed without a press.** The install control appears only once
+  the download is finished, and the one press of a button labelled `Install and
+  restart` is the whole confirmation. There is no second confirmation step: a
+  `.confirm-row` is for destroying something, and restarting into a new version
+  does not destroy the document, which is written to disk before it is asked
+  about.
+- The install button is the **only** primary button on Home — the column Add
+  triggers are `.button-secondary` — so the brand pink marks exactly one thing
+  the user may act on. It is never a fourth icon in a row of icons, and it
+  carries its label in words.
+- Dismissing is an `IconButton` labelled `Dismiss the update notice`, because a
+  close glyph that names what it closes is a control and an unlabelled one is a
+  mystery. It hides the banner for the rest of the launch and changes nothing on
+  disk.
+- It appears on the **Home view only**, and only when the main process has
+  reported an update. There is no version number, no "up to date" state, and no
+  check button: the app looks once per launch and says nothing when there is
+  nothing to say.
+- It carries no second action, no countdown, and no progress bar. A notice that
+  grows a second line of controls is a dialog, and the system has none.
+- Never let an update failure reach this surface. A check that cannot reach GitHub
+  is logged in the main process and shown nowhere, because being offline is this
+  app's normal state.
 
 ### Quick Stats
 
@@ -1626,6 +1692,11 @@ edge case.
 - Don't truncate a task or reminder title with an ellipsis. Wrap it.
 - Don't hide overdue or completed items.
 - Don't use a tab to trigger an action, and don't use a modal for confirmation.
+- Don't install an update the user did not ask for, and don't turn the
+  [update banner](#update-banner) into a toast, a layer, or a dialog.
+- Don't put a "check for updates" control anywhere, and don't show a version
+  number, a last-checked line, or an up-to-date state. The app looks once per
+  launch and stays quiet.
 - Don't put a fill, a track, or a border behind a choice group. A selected option
   is a bold word with a hairline under it, nothing more.
 - Don't show a running clock, a ring, or a progress value in the session panel

@@ -373,6 +373,32 @@ describe('design system completeness', () => {
     expect(primary).not.toContain('var(--color-brand-accent)')
   })
 
+  it('makes the update banner a block in the flow, with no layer under it', () => {
+    const css = readFileSync(join(ROOT, 'src', 'renderer', 'styles', 'app.css'), 'utf8')
+    const banner = css.match(/\.update-banner \{([^}]*)\}/)?.[1] ?? ''
+
+    // The composer's own outlined treatment, reused rather than a new pattern:
+    // a canvas fill, a hairline, and the panel radius. Nothing new, because a
+    // notice is not a reason to add a token.
+    expect(banner).toContain('var(--color-canvas)')
+    expect(banner).toContain('var(--elevation-hairline)')
+    expect(banner).toContain('var(--rounded-lg)')
+    // A toast needs a viewport, an overlay, and a z-index over the planner.
+    // This system has no backdrop at all, so a notice cannot be one.
+    expect(banner).not.toContain('position')
+    expect(banner).not.toContain('z-index')
+    expect(banner).not.toContain('inset')
+    // The one primary button on Home, so the brand pink marks one action.
+    const title = css.match(/\.update-banner__title \{([^}]*)\}/)?.[1] ?? ''
+    expect(title).toContain('var(--type-title-md)')
+    expect(title).toContain('var(--color-ink)')
+    const note = css.match(/\.update-banner__note \{([^}]*)\}/)?.[1] ?? ''
+    expect(note).toContain('var(--type-body-sm)')
+    // The note supports the title, so it is muted and never the ink.
+    expect(note).toContain('var(--color-muted)')
+    expect(note).not.toContain('var(--color-error)')
+  })
+
   it('gives the two grid children no surface of their own', () => {
     const css = readFileSync(join(ROOT, 'src', 'renderer', 'styles', 'app.css'), 'utf8')
     // They are an alignment device between the grid and the columns inside it.
@@ -545,6 +571,7 @@ describe('DESIGN.md is in sync with tokens.css', () => {
       'Quick Stats',
       'Onboarding',
       'Bottom Navigation',
+      'Update Banner',
     ]) {
       expect(design, component).toContain(`### ${component}`)
     }

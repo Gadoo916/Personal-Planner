@@ -1,7 +1,8 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import type { UpdateState } from './hooks/useUpdates'
 import { addDaysISO, defaultReminderTime, formatDayDate, todayISO } from './lib/dates'
 import type { AppData, Reminder, Task } from './storage/types'
 
@@ -447,6 +448,58 @@ describe('screen composition', () => {
     // The group is still a row of words: no track and no fill behind it.
     const group = screen.getByRole('tablist', { name: 'Priority' })
     expect(group).toHaveClass('nav-pill-group')
+  })
+})
+
+describe('update banner', () => {
+  let emit: (state: UpdateState | null) => void = () => {}
+
+  beforeEach(() => {
+    // The bridge the preload exposes, reduced to the two functions it has.
+    window.updates = {
+      onStatus: (listener) => {
+        emit = listener
+        return () => {}
+      },
+      install: async () => {},
+    }
+  })
+
+  afterEach(() => {
+    delete window.updates
+  })
+
+  it('is above the welcome band on Home, and on no other view', async () => {
+    const user = await renderApp()
+    // Nothing is drawn until the main process has found something.
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+    await act(async () => {
+      emit({ status: 'downloaded', version: '1.1.0' })
+    })
+
+    const banner = screen.getByRole('status')
+    const main = document.querySelector('.planner-main')
+    expect(main?.firstElementChild).toBe(banner)
+    expect(banner).toHaveTextContent('Update ready')
+    expect(within(banner).getByRole('button', { name: 'Install and restart' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Profile' }))
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('leaves the tasks alone', async () => {
+    const user = await renderApp()
+    await act(async () => {
+      emit({ status: 'downloaded', version: '1.1.0' })
+    })
+
+    await openAddForm(user)
+    await user.type(screen.getByLabelText('Title'), 'Read chapter 4')
+    await user.click(screen.getByRole('button', { name: 'Add' }))
+
+    expect(await screen.findByText('Read chapter 4')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Update ready')
   })
 })
 
