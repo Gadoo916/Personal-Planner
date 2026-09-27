@@ -1,0 +1,596 @@
+/* ui.css — the Personal Planner design system, expressed as reusable classes.
+   Class names mirror the design system vocabulary one-to-one. */
+
+/* ------------------------------------------------- typography utilities */
+.t-display-xl {
+  font: var(--type-display-xl);
+  letter-spacing: var(--type-display-xl-tracking);
+}
+.t-display-lg {
+  font: var(--type-display-lg);
+  letter-spacing: var(--type-display-lg-tracking);
+}
+.t-display-md {
+  font: var(--type-display-md);
+  letter-spacing: var(--type-display-md-tracking);
+}
+.t-display-sm {
+  font: var(--type-display-sm);
+  letter-spacing: var(--type-display-sm-tracking);
+}
+.t-title-lg {
+  font: var(--type-title-lg);
+  letter-spacing: var(--type-title-lg-tracking);
+}
+.t-title-md {
+  font: var(--type-title-md);
+}
+.t-title-sm {
+  font: var(--type-title-sm);
+}
+.t-body-md {
+  font: var(--type-body-md);
+}
+.t-body-sm {
+  font: var(--type-body-sm);
+}
+.t-caption {
+  font: var(--type-caption);
+}
+.t-button {
+  font: var(--type-button);
+}
+.t-nav-link {
+  font: var(--type-nav-link);
+}
+.t-muted {
+  color: var(--color-muted);
+}
+.t-muted-soft {
+  color: var(--color-muted-soft);
+}
+.t-body {
+  color: var(--color-body);
+}
+
+/* --------------------------------------------------------------- buttons */
+.button-primary,
+.button-secondary,
+.button-text-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  height: var(--control-height);
+  padding: var(--control-padding-block) var(--control-padding-inline);
+  border-radius: var(--control-radius);
+  border: 1px solid transparent;
+  font: var(--type-button);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast),
+    border-color var(--motion-fast);
+}
+
+/* The one accent is never a fill: the primary action is near-black, and the
+   accent stays where it carries meaning — badge tints and the app icon. */
+.button-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.button-primary:hover {
+  background: var(--color-primary-active);
+}
+.button-primary:active {
+  background: var(--color-primary-active);
+  box-shadow: var(--elevation-control-active);
+}
+
+.button-secondary {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  border-color: var(--color-hairline);
+}
+.button-secondary:hover {
+  background: var(--color-surface-soft);
+}
+.button-secondary:active {
+  box-shadow: var(--elevation-control-active);
+}
+
+.button-text-link {
+  height: auto;
+  padding: 0;
+  background: transparent;
+  color: var(--color-ink);
+}
+.button-text-link:hover {
+  text-decoration: underline;
+}
+
+.button-primary:disabled,
+.button-secondary:disabled {
+  background: var(--color-surface-strong);
+  border-color: transparent;
+  color: var(--color-muted-soft);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.button-icon-circular {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  flex: 0 0 var(--icon-button-size);
+  border-radius: var(--rounded-full);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background-color var(--motion-fast);
+}
+.button-icon-circular:hover {
+  background: var(--color-surface-soft);
+}
+.button-icon-circular:active {
+  box-shadow: var(--elevation-control-active);
+}
+
+.text-link {
+  color: var(--color-ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: var(--type-nav-link);
+}
+.text-link:hover {
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------- pill / tabs */
+/* The group is not a segmented control: the options are labels, so the group
+   has no track, no fill and no radius. Only the selection carries a mark. */
+.nav-pill-group {
+  display: inline-flex;
+  align-items: stretch;
+  gap: var(--spacing-sm);
+}
+
+.category-tab {
+  position: relative;
+  padding: var(--tab-padding-block) var(--tab-padding-inline);
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font: var(--type-nav-link);
+  cursor: pointer;
+  transition: color var(--motion-fast);
+}
+.category-tab:hover {
+  color: var(--color-ink);
+}
+/* Selected: bold, and a hairline under the word. No fill, no heavy underline. */
+.category-tab[aria-selected='true'] {
+  color: var(--color-ink);
+  font: var(--type-tab-selected);
+  box-shadow: inset 0 -2px 0 currentColor;
+}
+
+/* ---------------------------------------------------------------- inputs */
+/* Native date and time inputs are deliberately absent: see DESIGN.md, Pickers. */
+.text-input {
+  width: 100%;
+  height: var(--control-height);
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--control-radius);
+  font: var(--type-body-md);
+  transition: border-color var(--motion-fast);
+}
+.text-input::placeholder {
+  color: var(--color-muted-soft);
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--color-ink);
+}
+.text-input:disabled {
+  background: var(--color-surface-strong);
+  color: var(--color-muted-soft);
+  cursor: not-allowed;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+.field-label {
+  font: var(--type-caption);
+  color: var(--color-muted);
+}
+
+.select-input {
+  height: var(--control-height);
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--control-radius);
+  font: var(--type-body-md);
+  cursor: pointer;
+}
+.select-input:focus {
+  outline: none;
+  border-color: var(--color-ink);
+}
+
+/* --------------------------------------------------------------- badges */
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  padding: var(--badge-padding-block) var(--badge-padding-inline);
+  border-radius: var(--rounded-pill);
+  background: var(--color-surface-card);
+  color: var(--color-body);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+
+.badge-pill--accent {
+  background: color-mix(in srgb, var(--color-brand-accent) 12%, var(--color-canvas));
+  color: var(--color-ink);
+}
+.badge-pill--success {
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-canvas));
+  color: var(--color-ink);
+}
+.badge-pill--warning {
+  background: color-mix(in srgb, var(--color-warning) 18%, var(--color-canvas));
+  color: var(--color-ink);
+}
+.badge-pill--error {
+  background: color-mix(in srgb, var(--color-error) 12%, var(--color-canvas));
+  color: var(--color-ink);
+}
+.badge-pill--strong {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.priority-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--rounded-full);
+  flex: 0 0 6px;
+}
+.priority-badge--high .priority-badge__dot {
+  background: var(--color-error);
+}
+.priority-badge--medium .priority-badge__dot {
+  background: var(--color-warning);
+}
+.priority-badge--low .priority-badge__dot {
+  background: var(--color-muted-soft);
+}
+
+/* The priority level is also the composer's control: the active line wears the
+   same three colours as the badge, so the choice and the item always agree. */
+.category-tab--high[aria-selected='true'] {
+  box-shadow: inset 0 -2px 0 var(--color-error);
+}
+.category-tab--medium[aria-selected='true'] {
+  box-shadow: inset 0 -2px 0 var(--color-warning);
+}
+.category-tab--low[aria-selected='true'] {
+  box-shadow: inset 0 -2px 0 var(--color-muted-soft);
+}
+
+/* ---------------------------------------------------------------- pickers */
+/* An anchored popover, not a modal: it sits over the column it belongs to and
+   closes on Escape or a press outside it. */
+
+.picker-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  height: var(--control-height);
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--control-radius);
+  font: var(--type-body-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--motion-fast);
+}
+.picker-trigger:hover {
+  background: var(--color-surface-soft);
+}
+.picker-trigger--open {
+  border-color: var(--color-ink);
+}
+
+.picker-popover {
+  position: absolute;
+  top: calc(100% + var(--spacing-xxs));
+  left: 0;
+  z-index: 1;
+  width: var(--control-popover-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-canvas);
+  border-radius: var(--rounded-lg);
+  box-shadow: var(--elevation-hairline);
+}
+.picker-popover--compact {
+  width: auto;
+  min-width: var(--control-popover-width);
+}
+
+.picker-popover__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.picker-popover__title {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+
+.picker-popover__foot {
+  display: flex;
+  justify-content: flex-start;
+  border-top: 1px solid var(--color-hairline);
+  padding-top: var(--spacing-xs);
+}
+
+.picker-week,
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--spacing-xxs);
+}
+
+.picker-week__day {
+  font: var(--type-caption);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.picker-grid__day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--icon-button-size);
+  border: 1px solid transparent;
+  border-radius: var(--rounded-md);
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-caption);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+.picker-grid__day:hover:not(:disabled) {
+  background: var(--color-surface-soft);
+}
+.picker-grid__day--outside {
+  color: var(--color-muted-soft);
+}
+.picker-grid__day--today {
+  border-color: var(--color-hairline);
+  font-weight: 600;
+}
+.picker-grid__day--selected,
+.picker-grid__day--selected:hover:not(:disabled) {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.picker-grid__day:disabled {
+  color: var(--color-muted-soft);
+  cursor: not-allowed;
+}
+
+.picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.picker-row__label {
+  font: var(--type-caption);
+  color: var(--color-muted);
+}
+
+.picker-popover--menu {
+  padding: var(--spacing-xs);
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  background: transparent;
+  border: 0;
+  border-radius: var(--control-radius);
+  color: var(--color-ink);
+  font: var(--type-body-md);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion-fast);
+}
+.dropdown-option:hover {
+  background: var(--color-surface-soft);
+}
+.dropdown-option--selected {
+  font: var(--type-tab-selected);
+}
+
+.dropdown-trigger__dot,
+.dropdown-option__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--rounded-full);
+  flex: 0 0 6px;
+}
+.dropdown-trigger__dot--high,
+.dropdown-option__dot--high {
+  background: var(--color-error);
+}
+.dropdown-trigger__dot--medium,
+.dropdown-option__dot--medium {
+  background: var(--color-warning);
+}
+.dropdown-trigger__dot--low,
+.dropdown-option__dot--low {
+  background: var(--color-muted-soft);
+}
+
+/* One row shape for every stepper: the clock's and the picker's. It is a
+   fieldset, so the browser's own box is switched off here and the row's owner
+   decides how it is aligned. */
+.stepper-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.stepper-row__label {
+  font: var(--type-caption);
+  color: var(--color-muted);
+  white-space: nowrap;
+  padding: 0;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.stepper__value {
+  min-width: var(--icon-button-size);
+  font: var(--type-title-md);
+  color: var(--color-ink);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ wheel */
+/* A quantity read as a wheel rather than as a row: the chosen value in the
+   middle, the plus above it and the minus below, so the column still has a top
+   and a bottom. One number per column, so the value is the only thing to read.
+   The chosen value settles in on the colour and opacity timing; nothing moves. */
+.wheel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  margin: 0;
+  padding: 0 var(--spacing-sm);
+  border: 0;
+  min-inline-size: 0;
+}
+
+/* The second column of a pair carries the hairline between them, so two columns
+   read as one control. */
+.wheel + .wheel {
+  border-inline-start: 1px solid var(--color-hairline);
+}
+
+.wheel__label {
+  font: var(--type-caption);
+  color: var(--color-muted);
+  white-space: nowrap;
+  padding: 0;
+}
+
+/* The value: a display step in ink, and nothing else in the column. */
+.wheel__value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  font: var(--type-display-sm);
+  letter-spacing: var(--type-display-sm-tracking);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  animation: wheel-settle var(--motion-fast);
+}
+
+.wheel__unit {
+  font: var(--type-caption);
+  color: var(--color-muted);
+  white-space: nowrap;
+  padding: 0;
+}
+
+@keyframes wheel-settle {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------ empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-card);
+}
+.empty-state__title {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+.empty-state__body {
+  font: var(--type-body-sm);
+  color: var(--color-muted);
+}
+
+/* ---------------------------------------------------------- dark surface */
+.dark-surface {
+  background: var(--color-surface-dark);
+  color: var(--color-on-dark);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-lg);
+}
+.dark-surface__soft {
+  color: var(--color-on-dark-soft);
+  font: var(--type-body-sm);
+}

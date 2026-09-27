@@ -1,0 +1,909 @@
+/* app.css — composition of the single planner screen. Consumes tokens only. */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--content-padding-inline) var(--spacing-section);
+}
+
+/* -------------------------------------------------------------- app title */
+.app-title {
+  font: var(--type-display-sm);
+  letter-spacing: var(--type-display-sm-tracking);
+  color: var(--color-ink);
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+}
+
+/* ---------------------------------------------------------- focus session */
+/* Five faces, one panel: an idle top bar with the Focus button, a centred
+   setup, a centred break picker, a centred running clock, and the summary the
+   session ends on. The view modifier picks the padding. */
+.focus-session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-card);
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+}
+/* The idle face is two lines in the panel's own column, centred, and the setup is
+   centred too: the user is choosing, not scanning. The running face keeps the
+   full gap, so the ring owns the space. */
+.focus-session--idle {
+  gap: var(--spacing-md);
+  align-items: center;
+}
+.focus-session--setup {
+  gap: var(--spacing-md);
+}
+/* One wheel and one action, so it tightens like the faces that are not a form. */
+.focus-session--breakSetup {
+  gap: var(--spacing-md);
+}
+.focus-session--session {
+  gap: var(--spacing-xl);
+}
+/* The complete face is a column of art, a summary, and one control, so it
+   tightens to the same gap as idle and setup. */
+.focus-session--complete {
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+/* The row the two faces that carry an action in the bar need. The two ends of it
+   are the title and the action, so the row distributes them rather than the title
+   pushing with an auto margin, which would outrank the centring of the faces that
+   do not have a bar. */
+.focus-session__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.focus-session__title {
+  font: var(--type-title-lg);
+  letter-spacing: var(--type-title-lg-tracking);
+  color: var(--color-ink);
+}
+
+.focus-session__animation {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: var(--rounded-md);
+  user-select: none;
+  pointer-events: none;
+}
+
+.focus-session__animation--ring {
+  width: 72px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: var(--rounded-xs);
+}
+
+/* The setup is centred in the panel: the user is choosing, not scanning. It is
+   a fieldset, so the browser's own border and padding are switched off here. */
+.focus-session__setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.focus-session__setup-title {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+
+/* The two wheels of the session length, side by side. The gap is only a hair's
+   width: each column brings its own padding and the hairline between them, so a
+   wider gap here would push the divider off the centre of the pair. */
+.focus-session__setup-lengths {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.focus-session__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.focus-session__row-label {
+  font: var(--type-caption);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.focus-session__centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.focus-session__phase {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+.focus-session__phase--break {
+  color: var(--color-warning);
+}
+
+/* The ring is the progress bar: the arc length is the only measured value, and
+   it comes from --progress, so every visual decision stays in tokens. */
+.focus-session__ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--control-ring-size);
+  height: var(--control-ring-size);
+}
+
+.focus-session__ring-svg {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.focus-session__ring-track,
+.focus-session__ring-arc {
+  fill: none;
+  stroke-width: var(--control-ring-stroke);
+}
+
+.focus-session__ring-track {
+  stroke: var(--color-surface-strong);
+}
+
+.focus-session__ring-arc {
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+  stroke-dasharray: var(--control-ring-circumference);
+  stroke-dashoffset: calc(var(--control-ring-circumference) * (1 - var(--progress, 0)));
+}
+.focus-session__ring-arc--break {
+  stroke: var(--color-warning);
+}
+
+/* The ring's contents share the arc's cell and sit above it: the animation
+   stacked over the clock, both centred, neither of them interactive. */
+.focus-session__ring-content {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xxs);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.focus-session__clock {
+  font: var(--type-display-md);
+  letter-spacing: var(--type-display-md-tracking);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-session__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.focus-session__summary {
+  font: var(--type-caption);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+/* The end-of-session figures. One outlined block rather than two floating
+   numbers, because a session is read as one run and not as two unrelated
+   totals. It is a plain block: no dialog role, no backdrop, no overlay. The
+   figures are labelled by their own <dt>, so no extra class is needed. */
+.focus-session__summary-card {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  margin: 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--rounded-lg);
+  background: var(--color-canvas);
+  box-shadow: var(--elevation-hairline);
+}
+
+.focus-session__summary-card > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xxs);
+}
+
+.focus-session__summary-card dt {
+  font: var(--type-caption);
+  color: var(--color-muted);
+}
+
+.focus-session__summary-card dd {
+  margin: 0;
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+
+/* ---------------------------------------------------------------- layout */
+.planner-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  gap: var(--spacing-lg);
+  align-items: start;
+  width: 100%;
+  max-width: var(--container-max);
+  margin: var(--spacing-lg) auto 0;
+}
+
+/* The two grid children exist only to own a column's stack. They carry no
+   surface of their own: no background, no border, no padding. A panel here
+   would put a third border between the grid and the columns inside it. */
+.planner-main,
+.planner-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+.planner-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+/* The header is one row that never wraps: the title at one end, the Add at the
+   other. Wrapping is what dropped the Add under the title in the narrower
+   reminders column. */
+.planner-column__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-inline: var(--spacing-xxs);
+}
+
+.planner-column__title {
+  font: var(--type-title-lg);
+  letter-spacing: var(--type-title-lg-tracking);
+  color: var(--color-ink);
+}
+
+.planner-column__header .button-secondary {
+  margin-left: auto;
+}
+
+.planner-column__composer {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------- bottom navigation */
+/* Three views, one bar, always at the bottom. The app has no route to lose and
+   no history to walk back through, so this bar is the whole of the navigation.
+   It is fixed rather than sticky so it cannot scroll away under a long Profile
+   calendar, and it separates itself with a hairline rather than a shadow, since
+   a shadow on a bar lying on the canvas would be the only depth in the system
+   with no panel to cast it. */
+.bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--spacing-xxl);
+  padding: var(--control-padding-block) var(--content-padding-inline);
+  border-top: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+}
+
+/* A destination, not an action, so a bare button and not the Button primitive:
+   no fill, no radius, no primary. It repeats .category-tab exactly, which is
+   what lets the active hairline mean the same thing here as in a choice group. */
+.bottom-nav__item {
+  padding: var(--tab-padding-block) var(--tab-padding-inline);
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font: var(--type-nav-link);
+  cursor: pointer;
+  transition: color var(--motion-fast);
+}
+.bottom-nav__item:hover {
+  color: var(--color-ink);
+}
+/* The current view: bold, and the shared 2px hairline in the word's own colour.
+   No fill and no lift, so it reads as emphasis rather than a pressed button. */
+.bottom-nav__item[aria-current='page'] {
+  color: var(--color-ink);
+  font: var(--type-tab-selected);
+  box-shadow: inset 0 -2px 0 currentColor;
+}
+
+/* ---------------------------------------------------------------- welcome */
+/* A heading band, not a card: no panel, no border, no padding. The greeting is
+   supporting information, so the title keeps the ink and the greeting does not.
+   It holds no action at all: the navigation bar is how the Profile is reached,
+   so a button here would do nothing but duplicate it. */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  align-items: flex-start;
+}
+
+.welcome__greeting {
+  font: var(--type-body-sm);
+  color: var(--color-muted);
+}
+
+.welcome .app-title {
+  max-width: none;
+  margin-inline: 0;
+  align-self: stretch;
+}
+
+/* ------------------------------------------------------------- quick stats */
+/* Four derived counts above the tasks they describe. No colour: a count is not
+   a status, and success or error here would be decoration, not meaning. */
+.quick-stats {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-card);
+}
+
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  flex: 1 1 var(--spacing-section);
+  min-width: 0;
+}
+
+.quick-stat__label {
+  font: var(--type-caption);
+  color: var(--color-muted);
+}
+
+.quick-stat__value {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.quick-stat__note {
+  font: var(--type-caption);
+  color: var(--color-muted-soft);
+}
+
+/* -------------------------------------------------------------- composer */
+/* One compact, wrapping composer, rendered inside the column it belongs to.
+   It reads as the row where the next item will appear, not as a dialog. */
+
+.add-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--rounded-lg);
+  background: var(--color-canvas);
+  box-shadow: var(--elevation-hairline);
+}
+
+.add-form__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: flex-end;
+}
+
+.add-form__fields > .field--grow {
+  flex: 1 1 200px;
+}
+
+.add-form__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.form-error {
+  font: var(--type-caption);
+  color: var(--color-error);
+}
+
+/* ------------------------------------------------------------- task group */
+.task-group {
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-card);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Today is the one group that is emphasised: a lighter panel with a hairline,
+   so the current day is found without reading a single label. */
+.task-group--today {
+  background: var(--color-surface-soft);
+  box-shadow: var(--elevation-hairline);
+}
+
+.task-group__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.task-group__day {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+
+.task-group__date {
+  font: var(--type-caption);
+  color: var(--color-muted);
+}
+
+.task-group__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+}
+
+/* -------------------------------------------------------------- task item */
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border-radius: var(--rounded-md);
+  background: var(--color-canvas);
+  transition: background-color var(--motion-fast);
+}
+.task-item:hover {
+  background: var(--color-surface-soft);
+}
+.task-item--editing {
+  box-shadow: var(--elevation-hairline);
+  background: var(--color-canvas);
+}
+
+.completion-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  flex: 0 0 var(--icon-button-size);
+  margin-top: -2px;
+  border-radius: var(--rounded-full);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+  color: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+.completion-toggle:hover {
+  border-color: var(--color-muted);
+}
+.completion-toggle--done {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-on-primary);
+}
+
+.task-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.task-item__title {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.task-item__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.task-item__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  opacity: 0;
+  transition: opacity var(--motion-fast);
+}
+.task-item:hover .task-item__actions,
+.task-item:focus-within .task-item__actions {
+  opacity: 1;
+}
+
+.task-item--completed .task-item__title {
+  color: var(--color-muted-soft);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-hairline);
+}
+.task-item--completed {
+  background: transparent;
+}
+.task-item--completed:hover {
+  background: var(--color-canvas);
+}
+
+/* ---------------------------------------------------------------- danger */
+.danger-link {
+  color: var(--color-error);
+}
+.confirm-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  font: var(--type-caption);
+  color: var(--color-muted);
+}
+
+/* --------------------------------------------------------- reminder list */
+.reminder-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.reminder-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-lg);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-card);
+}
+
+.reminder-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.reminder-card__title {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.reminder-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  flex: 0 0 auto;
+}
+
+.reminder-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+  font: var(--type-body-sm);
+  color: var(--color-muted);
+}
+
+.reminder-card--overdue {
+  background: var(--color-canvas);
+  box-shadow: var(--elevation-hairline);
+}
+.reminder-card--overdue .remaining-time {
+  color: var(--color-error);
+}
+
+.remaining-time {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--badge-padding-block) var(--badge-padding-inline);
+  border-radius: var(--rounded-pill);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- onboarding */
+/* The first-run gate: one field, so the panel takes a measure rather than the
+   full content width. It is a state of the app, not a route, and it carries the
+   same title step the planner does. */
+.onboarding {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 100vh;
+}
+
+.onboarding__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: var(--control-form-width);
+  padding: var(--spacing-lg);
+  border-radius: var(--rounded-lg);
+  background: var(--color-canvas);
+  box-shadow: var(--elevation-hairline);
+}
+
+.onboarding__panel .app-title {
+  max-width: none;
+  margin-inline: 0;
+}
+
+.onboarding__greeting {
+  font: var(--type-title-lg);
+  letter-spacing: var(--type-title-lg-tracking);
+  color: var(--color-ink);
+}
+
+.onboarding__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------- profile */
+/* A view, not a layer: the panel sits in the flow above the navigation bar, so
+   there is no backdrop, no scrim, and nothing to composite it over. */
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding: var(--spacing-lg);
+  border-radius: var(--rounded-lg);
+  background: var(--color-canvas);
+  box-shadow: var(--elevation-hairline);
+}
+
+.profile__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.profile__title {
+  font: var(--type-title-lg);
+  letter-spacing: var(--type-title-lg-tracking);
+  color: var(--color-ink);
+}
+
+.profile__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.profile__name-row,
+.profile__name-edit {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.profile__name-edit .field {
+  flex: 1 1 200px;
+}
+
+.profile__name {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  flex: 1 1 auto;
+}
+
+/* Streaks and stats share one shape: a figure over its label. The figure is
+   tabular so a changing count does not shift the row. */
+.profile__streak,
+.profile__stats {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.profile__streak-item,
+.profile__stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  flex: 1 1 var(--spacing-section);
+  min-width: 0;
+  padding: var(--spacing-md);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-card);
+}
+
+.profile__streak-value,
+.profile__stat-value {
+  font: var(--type-title-lg);
+  letter-spacing: var(--type-title-lg-tracking);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile__streak-label,
+.profile__stat-label {
+  font: var(--type-caption);
+  color: var(--color-muted);
+}
+
+.profile__comparison {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+}
+
+.profile__comparison-text {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+
+.profile__comparison-detail {
+  font: var(--type-body-sm);
+  color: var(--color-muted);
+}
+
+.profile__calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.profile__calendar-title {
+  font: var(--type-title-md);
+  color: var(--color-ink);
+}
+
+.profile__calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--spacing-section), 1fr));
+  gap: var(--spacing-xxs);
+}
+
+/* A cell's shade is the day's focus time, ramped as one accent mixed into the
+   canvas at a fixed ratio per step. No second accent, no extra grey, no hex: a
+   heatmap is a tint, and tints are what color-mix is for. Every cell keeps a
+   hairline so the palest step still has an edge. */
+.profile__calendar-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  padding: var(--spacing-xs);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--rounded-md);
+  background: var(--color-canvas);
+}
+
+.profile__calendar-day--empty {
+  background: var(--color-canvas);
+}
+.profile__calendar-day--light {
+  background: color-mix(in srgb, var(--color-brand-accent) 8%, var(--color-canvas));
+}
+.profile__calendar-day--medium {
+  background: color-mix(in srgb, var(--color-brand-accent) 18%, var(--color-canvas));
+}
+.profile__calendar-day--strong {
+  background: color-mix(in srgb, var(--color-brand-accent) 30%, var(--color-canvas));
+}
+
+.profile__calendar-date,
+.profile__calendar-focus,
+.profile__calendar-tasks {
+  font: var(--type-caption);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile__calendar-focus,
+.profile__calendar-tasks {
+  color: var(--color-muted);
+}
+
+/* ------------------------------------------------------------ responsive */
+@media (max-width: 1024px) {
+  .planner-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  /* The bottom edge keeps the full clearance: the navigation bar is fixed, so the
+     last row of a view has to clear it rather than sit behind it. */
+  .app-shell {
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-section);
+  }
+
+  .focus-session__clock {
+    font: var(--type-display-sm);
+    letter-spacing: var(--type-display-sm-tracking);
+  }
+
+  .add-form__fields > .field,
+  .add-form__fields > .field--grow {
+    flex: 1 1 100%;
+  }
+
+  .task-item__actions {
+    opacity: 1;
+  }
+
+  /* A stat card per row, and a calendar cell that still holds a date and its
+     figure without the two colliding. */
+  .profile__streak-item,
+  .profile__stat {
+    flex: 1 1 100%;
+  }
+
+  .profile__calendar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(var(--spacing-lg), 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .app-shell {
+    padding-inline: var(--spacing-xxl);
+  }
+}

@@ -1,0 +1,121 @@
+/*
+ * tokens.css — the single source of truth for every visual value.
+ * Nothing outside this file may hardcode a color, radius, spacing step,
+ * type size, weight, letter-spacing, or shadow.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- color */
+  /* The brand pink is the primary action; the accent is the ink, so the pink is
+     spent on the one control meant to be acted on. See DESIGN.md "Brand & Accent". */
+  --color-primary: #b16e97;
+  --color-primary-active: #64295c;
+  --color-brand-accent: #111111;
+
+  --color-badge-orange: #fb923c;
+  --color-badge-pink: #ec4899;
+  --color-badge-violet: #8b5cf6;
+  --color-badge-emerald: #34d399;
+
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f8f9fa;
+  --color-surface-card: #ececec;
+  --color-surface-strong: #e5e7eb;
+  --color-surface-dark: #101010;
+  --color-surface-dark-elevated: #1a1a1a;
+
+  --color-hairline: #e5e7eb;
+  --color-hairline-soft: #f3f4f6;
+
+  --color-ink: #111111;
+  --color-body: #374151;
+  --color-muted: #6b7280;
+  --color-muted-soft: #898989;
+  --color-on-primary: #ffffff;
+  --color-on-dark: #ffffff;
+  --color-on-dark-soft: #a1a1aa;
+
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  /* ------------------------------------------------------------ typography */
+  /* Cal Sans is not publicly licensed; Inter 600 is the documented substitute
+     and already sits second in the display stack, so the fallback is automatic
+     and no web font is ever loaded. */
+  --font-display: 'Cal Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --type-display-xl: 600 64px/1.05 var(--font-display);
+  --type-display-xl-tracking: -2px;
+  --type-display-lg: 600 48px/1.1 var(--font-display);
+  --type-display-lg-tracking: -1.5px;
+  --type-display-md: 600 36px/1.15 var(--font-display);
+  --type-display-md-tracking: -1px;
+  --type-display-sm: 600 28px/1.2 var(--font-display);
+  --type-display-sm-tracking: -0.5px;
+  --type-title-lg: 600 22px/1.3 var(--font-display);
+  --type-title-lg-tracking: -0.3px;
+  --type-title-md: 600 18px/1.4 var(--font-ui);
+  --type-title-sm: 600 16px/1.4 var(--font-ui);
+  --type-body-md: 400 16px/1.5 var(--font-ui);
+  --type-body-sm: 400 14px/1.5 var(--font-ui);
+  --type-caption: 500 13px/1.4 var(--font-ui);
+  --type-code: 400 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  --type-button: 600 14px/1 var(--font-ui);
+  --type-nav-link: 500 14px/1.4 var(--font-ui);
+  --type-tab-selected: 600 14px/1.4 var(--font-ui);
+
+  /* --------------------------------------------------------------- spacing */
+  --spacing-xxs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  --spacing-section: 96px;
+
+  /* ---------------------------------------------------------------- radius */
+  --rounded-xs: 4px;
+  --rounded-sm: 6px;
+  --rounded-md: 8px;
+  --rounded-lg: 12px;
+  --rounded-xl: 16px;
+  --rounded-pill: 9999px;
+  --rounded-full: 9999px;
+
+  /* ------------------------------------------------------------- elevation */
+  --elevation-flat: none;
+  --elevation-hairline: 0 0 0 1px var(--color-hairline);
+  --elevation-subtle: 0 1px 2px rgb(17 17 17 / 4%), 0 8px 24px rgb(17 17 17 / 6%);
+  --elevation-pill-active: 0 1px 2px rgb(17 17 17 / 8%);
+  --elevation-control-active: inset 0 1px 2px rgb(17 17 17 / 10%);
+
+  /* ------------------------------------------------------------- component */
+  --control-height: 40px;
+  --control-height-compact: 36px;
+  --control-radius: var(--rounded-md);
+  --control-popover-width: 280px;
+  /* The onboarding panel: a form with one field needs a measure, not the full
+     content width, and no control width means that. */
+  --control-form-width: 420px;
+  /* The session ring: 176px across, a 6px arc, so the circle is r=85 and its
+     circumference is 2*pi*85 = 534.07. The two must agree or the arc is wrong. */
+  --control-ring-size: 176px;
+  --control-ring-stroke: 6px;
+  --control-ring-circumference: 534.07px;
+  --control-padding-block: 12px;
+  --control-padding-inline: 20px;
+  --input-padding-block: 10px;
+  --input-padding-inline: 14px;
+  --icon-button-size: 36px;
+  --badge-padding-block: 4px;
+  --badge-padding-inline: 12px;
+  --tab-padding-block: 8px;
+  --tab-padding-inline: 14px;
+  --container-max: 1200px;
+  --content-padding-inline: var(--spacing-lg);
+  --motion-fast: 120ms ease;
+}
