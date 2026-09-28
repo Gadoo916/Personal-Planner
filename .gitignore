@@ -1,5 +1,9 @@
 node_modules/
 dist/
 release/
+# Build output staged by the packaging smoke test, left behind when PowerShell
+# does not expand %TEMP% in an electron-builder --config.directories.output
+# argument. Build output like the two above, so it is not source either.
+%TEMP%/
 *.log
 .DS_Store
