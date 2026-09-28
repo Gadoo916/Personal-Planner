@@ -19,9 +19,11 @@
 }
 
 /* ---------------------------------------------------------- focus session */
-/* Five faces, one panel: an idle top bar with the Focus button, a centred
+/* Five faces, one card: an idle top bar with the Focus button, a centred
    setup, a centred break picker, a centred running clock, and the summary the
-   session ends on. The view modifier picks the padding. */
+   session ends on. The view modifier picks the padding. The card is compact and
+   centred on both axes — see DESIGN.md "Session Timer" — rather than a band
+   across the window, because the view's whole content is one clock. */
 .focus-session {
   display: flex;
   flex-direction: column;
@@ -30,8 +32,14 @@
   border-radius: var(--rounded-lg);
   background: var(--color-surface-card);
   width: 100%;
-  max-width: var(--container-max);
+  max-width: var(--control-form-width);
   margin-inline: auto;
+  /* The block axis is centred on auto margins rather than on justify-content,
+     because they are also the correct answer when the card is taller than the
+     view: negative free space resolves them to zero, so an over-tall card falls
+     back to the top and scrolls instead of losing its top edge. The shell's
+     --spacing-section bottom padding is what keeps it clear of the fixed bar. */
+  margin-block: auto;
 }
 /* The idle face is two lines in the panel's own column, centred, and the setup is
    centred too: the user is choosing, not scanning. The running face keeps the

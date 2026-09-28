@@ -240,7 +240,7 @@ below.
 | `--control-padding-block` | `12px` | Button padding, block axis |
 | `--control-padding-inline` | `20px` | Button padding, inline axis |
 | `--control-popover-width` | `280px` | The day picker; the time picker's minimum width |
-| `--control-form-width` | `420px` | The onboarding panel, which is one field and needs a measure rather than the full content width |
+| `--control-form-width` | `420px` | The measure of a **compact single-purpose card**: the onboarding panel, which is one field, and the [session panel](#session-timer), which is one clock. Both need a measure rather than the full content width |
 | `--control-ring-size` | `176px` | The session ring's box |
 | `--control-ring-stroke` | `6px` | The session ring's track and arc |
 | `--control-ring-circumference` | `534.07px` | The session ring's arc length, `2 * pi * 85` |
@@ -250,6 +250,14 @@ below.
 `--control-popover-width` is the width of an anchored popover, not a control: it
 exists so the calendar and the clock share one width and cannot drift apart as
 either grows.
+
+`--control-form-width` is the system's **one small-card measure**, and it is
+shared rather than doubled: a value reused for a second surface is a decision,
+where a second near-identical value is a drift waiting to happen. It is the
+width of anything whose entire content is a single thing the user looks at or
+types into — one field to fill, or one clock to read. It is deliberately **not**
+`--container-max`, which is the measure of a page that holds a list and can
+therefore never be narrow enough to be a card.
 
 The three ring tokens are one geometric fact, not three choices. A `176px` ring
 with a `6px` stroke leaves a radius of `85`, and the arc is drawn by shortening
@@ -275,7 +283,8 @@ recalculated with it, or the ring closes early and never reaches 100%.
   .profile                     the report, max-width 1200px, centred
 
   FOCUS SESSION VIEW
-  .focus-session               the session panel, max-width 1200px, centred
+  .focus-session               the session card, max-width 420px, centred on both
+                               axes in the space above the nav bar
 
   .bottom-nav                  position fixed, bottom 0, inset-inline 0
 ```
@@ -290,11 +299,21 @@ the grid. `align-items: start` stops the shorter column from stretching to match
 the taller one.
 
 The session panel **used to** sit at the head of the narrow track above the
-reminders. It is now the whole of the [Focus Session view](#focus-session-view)
-and appears nowhere on Home, which is why `.planner-side` holds one column
-instead of two. Its `width: 100%; max-width: var(--container-max);
-margin-inline: auto` is what lets it drop into a full-width view with no
-container of its own.
+reminders, and it **used to** stretch the full width of the view. It is now the
+whole of the [Focus Session view](#focus-session-view), appears nowhere on Home,
+and is a compact card instead — which is why `.planner-side` holds one column
+instead of two.
+
+`width: 100%; max-width: var(--control-form-width); margin-inline: auto;
+margin-block: auto` is the whole of that. `width: 100%` with a `max-width` is
+what lets it drop into a view with no container of its own and **shrink** on a
+narrow window rather than overflow it; the two `auto` margins centre it on both
+axes, the block one because it is the only thing in the view's flow and the free
+space above the fixed bar is what `margin-block: auto` absorbs. The shell
+reserves `--spacing-section` at its bottom edge, so the card's centred position is
+the middle of the space **above** the bar rather than behind it, and when the card
+is taller than that space the auto margins resolve to zero and the card falls
+back to the top of the view and scrolls.
 
 `.planner-main` and `.planner-side` are **grid children that exist only to own a
 column's stack**. They carry no visual treatment of their own — no panel, no
@@ -302,10 +321,13 @@ background, no border — because they are an alignment device, not a surface. T
 two `PlannerColumn` components inside them are the real columns and still own
 their headers and their single add trigger.
 
-`--container-max` bounds `.app-title`, `.focus-session` and `.planner-grid`
-alike, so the three share one measure and the screen reads as one column of
-content. It bounds `.profile` for the same reason: a view that floated in a sea of
-white at 1440px would read as a dialog rather than a page.
+`--container-max` bounds `.app-title`, `.planner-grid` and `.profile` alike, so
+those three share one measure and the screen reads as one column of content. It
+bounds `.profile` for the same reason: a view that floated in a sea of white at
+1440px would read as a dialog rather than a page. It does **not** bound
+`.focus-session`: a 1200px session panel is a 1200px empty band with a 176px
+clock adrift in the middle of it, and the whole point of a view that has the
+screen to itself is that the clock is the only thing in it.
 
 
 ### Whitespace Philosophy
@@ -569,7 +591,7 @@ of the [Focus Session view](#focus-session-view), and the view modifier on
 
 | View | Modifier | What it shows |
 | --- | --- | --- |
-| Idle | `.focus-session--idle` | The heading, then the `Focus` button under it |
+| Idle | `.focus-session--idle` | The heading, the `idle.gif` animation, then the `Focus` button |
 | Setup | `.focus-session--setup` | The three lengths, the `Breaks` choice, and `Start` |
 | Break setup | `.focus-session--breakSetup` | One `Wheel` of break minutes, and `Start Break` |
 | Session | `.focus-session--session` | The running clock, centred |
@@ -578,6 +600,35 @@ of the [Focus Session view](#focus-session-view), and the view modifier on
 Idle, complete, and break setup tighten the panel to `gap: --spacing-md`; the
 session face keeps the full `gap: --spacing-xl`, so the ring owns the space
 instead of sharing it with a form.
+
+**Visual structure.** `.focus-session` is a **compact, centred card**, not a
+full-width band: `max-width: var(--control-form-width)` (420px) — the same measure
+as the [onboarding panel](#onboarding), see
+[Control Sizing](#control-sizing) — with `width: 100%`,
+`margin-inline: auto` and `margin-block: auto`, so it is the middle of the Focus
+Session view on **both** axes, in the space above the fixed
+[navigation bar](#bottom-navigation). Its own treatment is unchanged otherwise:
+padding `--spacing-lg`, radius `--rounded-lg`, background
+`--color-surface-card`, and a flex column, so the five faces below all compose
+inside the card rather than each choosing a width.
+
+Three consequences of that width, all of them the point:
+
+- The title and `Change session` sit **next to each other** rather than at the
+  two ends of a 1200px row, so the bar reads as one card header.
+- The ring, the three controls, `Take a Break`, and the `2h focus session`
+  caption are within one arm's reach of one another instead of floating in a band
+  wider than the clock they describe.
+- The card is the same width in all five faces, so switching faces resizes nothing.
+
+`width: 100%` is what makes it safe on a narrow window: the card takes the
+smaller of its measure and the space available, so at the 680px window minimum it
+shrinks to the content and never scrolls sideways. `margin-block: auto` is the
+only centring that is also correct when the card is *taller* than the view: auto
+block margins resolve to zero under negative free space, so an over-tall card
+falls back to the top of the view and scrolls instead of having its top clipped.
+The shell's `--spacing-section` bottom padding is what keeps the card clear of the
+fixed bar at that height too.
 
 **Idle.** The panel is already a column, so the title, the animation, and the
 button stack without a wrapper of their own: the `h2` first, the
@@ -644,7 +695,12 @@ of, and the bar's action is never the only way forward.
   `--type-title-md` in `--color-ink`. Plain text, not a pill: the ring below it is
   already the only shape on this face. `.focus-session__phase--break` switches the label
   to `--color-warning`, the one place the warning tint means "you are on a break"
-  rather than "something is wrong".
+  rather than "something is wrong". **Nothing is drawn above this label**: the
+  large `.focus-session__animation` picture the idle and complete faces carry does
+  not appear on the running face. A running session shows its illustration
+  **only inside the ring**, at the `--ring` size, so the same figure is never on
+  screen twice and there is nothing to keep in step. The first child of
+  `.focus-session__centre` is the phase label itself.
 - **Ring** — `--control-ring-size` square, `place-items: center`, carrying
   `role="progressbar"` with `aria-valuenow` in percent. The track is a full
   circle on `--color-surface-strong`; the arc is
@@ -815,7 +871,17 @@ and a user who resets twice should still be told they focused for an hour.
   needs explaining, the setup is one press away; the panel does not grow a
   paragraph of guidance to avoid a click.
 - Never centre a face with a `margin: auto` hack. Centring is `align-items` on
-  the face, or `justify-content: space-between` on a row that has two ends.
+  the face, or `justify-content: space-between` on a row that has two ends. The
+  card's own `margin-block: auto` is a different thing and is the one place the
+  system centres on the **block** axis; no face is ever centred by a margin.
+- **Never let the card stretch back to `--container-max`.** A session panel wider
+  than `--control-form-width` puts the title at one end of the window, `Change
+  session` at the other, and the clock nowhere near either. If a face needs more
+  room than the card has, the answer is a tighter gap on that face, not a wider
+  card and not a second width token.
+- The card is centred **in the Focus Session view only**. It is a child of
+  `.app-shell` and it appears on no other view, so this cannot leak into Home or
+  the Profile.
 
 ### Planner Layout
 
@@ -1615,14 +1681,16 @@ Three breakpoints, all in `app.css`.
 | --- | --- |
 | `> 1440px` | Shell padding-inline rises to `--spacing-xxl` (48px), so the 1200px content does not float in a sea of white. |
 | `≤ 1024px` | `.planner-grid` collapses to a single column, `minmax(0, 1fr)`. The two tracks stack whole: welcome, quick stats, tasks, then reminders. The bottom navigation is untouched, because it is fixed rather than part of the flow. |
-| `≤ 768px` | Shell padding drops to `--spacing-md`, **keeping `--spacing-section` at the bottom edge** so the last row still clears the navigation bar; the session timer clock steps down to `--type-display-sm`; the timer's controls drop `margin-left: auto` so they sit under the clock instead of fighting it for the row; every composer field becomes `flex: 1 1 100%`; row actions become permanently visible; the Profile's streak and stat cards each take a full row, and its calendar falls to the narrowest cell that still holds a date. |
+| `≤ 768px` | Shell padding drops to `--spacing-md`, **keeping `--spacing-section` at the bottom edge** so the last row still clears the navigation bar; the session card shrinks to the width available rather than overflowing it, because `width: 100%` sits under its `max-width`; the session timer clock steps down to `--type-display-sm`; the timer's controls drop `margin-left: auto` so they sit under the clock instead of fighting it for the row; every composer field becomes `flex: 1 1 100%`; row actions become permanently visible; the Profile's streak and stat cards each take a full row, and its calendar falls to the narrowest cell that still holds a date. |
 
 **Principles.** The single column stacks in reading order — the work first,
 because that is the primary track at every width, and reminders after it. The
 session panel is no longer in that stack at any width, because it has a view of
 its own, so reflow never has the job of keeping a running clock in sight. Nothing
 is hidden at small widths; only reflowed. Forms go full-width rather than
-scrolling horizontally, since a narrow field is unusable on touch.
+scrolling horizontally, since a narrow field is unusable on touch. The session
+card needs no breakpoint of its own: it is already at its narrowest at the window
+minimum, so the only thing the shell's padding does to it is make it narrower.
 
 The window minimum is 680×560, so the single-column layout is the floor, not an
 edge case.
@@ -1701,6 +1769,9 @@ edge case.
   is a bold word with a hairline under it, nothing more.
 - Don't show a running clock, a ring, or a progress value in the session panel
   before the user has pressed `Start`.
+- Don't widen the session card past `--control-form-width`, and don't give it a
+  width of its own. It is a compact, centred card in a view it has to itself; a
+  full-width session panel is a band with a clock adrift in it.
 - Don't add a second add trigger for the same column, and don't put an add
   trigger in the welcome band, the quick stats, or the Profile. The column header
   owns the title and the Add, and it counts nothing.

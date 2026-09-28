@@ -19,11 +19,16 @@ function renderTimer() {
 }
 
 describe('FocusSessionTimer GIF integrations', () => {
-  it('displays the idle GIF when the timer is idle', () => {
+  it('displays the idle GIF above the Focus button when the timer is idle', () => {
     renderTimer()
     const img = screen.getByAltText('Idle cat animation')
     expect(img).toBeInTheDocument()
     expect(img).toHaveAttribute('src', FOCUS_SESSION_GIFS.idle)
+    // The large picture belongs to the idle face only, and it is the middle
+    // child of the panel's own column: title, image, button.
+    const panel = document.querySelector('.focus-session--idle')
+    expect(img.parentElement).toBe(panel)
+    expect(panel?.children[1]).toBe(img)
   })
 
   it('switches to focus GIF inside the ring when the session starts', async () => {

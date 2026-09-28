@@ -229,6 +229,47 @@ describe('design system completeness', () => {
     expect(bar).toContain('justify-content: space-between')
   })
 
+  it('holds the session card to one compact measure, centred on both axes', () => {
+    const css = readFileSync(join(ROOT, 'src', 'renderer', 'styles', 'app.css'), 'utf8')
+    const card = css.match(/\.focus-session \{([^}]*)\}/)?.[1] ?? ''
+    const onboarding = css.match(/\.onboarding__panel \{([^}]*)\}/)?.[1] ?? ''
+
+    // The card is the width of a small card, not of a page. A full-width session
+    // panel is a band with the title at one end, Change session at the other,
+    // and a 176px clock adrift in the middle of it.
+    expect(card).toContain('max-width: var(--control-form-width)')
+    expect(card).not.toContain('var(--container-max)')
+
+    // The measure is reused, not doubled: the onboarding panel and the session
+    // card are both "one thing the user looks at", and a second near-identical
+    // width is a drift waiting to happen. This is what pins them to one value.
+    const width = card.match(/max-width: (var\(--[a-z-]+\))/)?.[1]
+    expect(width).toBe(onboarding.match(/max-width: (var\(--[a-z-]+\))/)?.[1])
+
+    // Shrinks rather than overflows a narrow window: 100% sits under the
+    // max-width, and the shell's padding at 768px is what narrows it.
+    expect(card).toContain('width: 100%')
+
+    // Centred on the inline axis like every panel, and on the block axis too,
+    // so the card is the middle of the Focus Session view rather than pinned to
+    // the top of it. The block margin is the one that survives an over-tall
+    // card: auto margins resolve to zero under negative free space, where a
+    // justify-content centre would push the top edge out of the view.
+    expect(card).toContain('margin-inline: auto')
+    expect(card).toContain('margin-block: auto')
+  })
+
+  it('keeps the session card off every other view', () => {
+    const source = readFileSync(join(ROOT, 'src', 'renderer', 'App.tsx'), 'utf8')
+    // The card is a direct child of the shell, and the shell renders it on the
+    // Focus Session view alone. Nothing else in the tree may mount it, or the
+    // centring would follow it onto Home or the Profile.
+    expect(source).toContain('<FocusSessionTimer timer={timer} />')
+    expect([...source.matchAll(/<FocusSessionTimer/g)]).toHaveLength(1)
+    // ...and it is the else of the view ternary, so it is the focus view's body.
+    expect(source).toMatch(/:\s*\(\s*<FocusSessionTimer/)
+  })
+
   it('keeps a column header to one row, with no counter in it', () => {
     const css = readFileSync(join(ROOT, 'src', 'renderer', 'styles', 'app.css'), 'utf8')
     const header = css.match(/\.planner-column__header \{([^}]*)\}/)?.[1] ?? ''
@@ -461,10 +502,31 @@ describe('design system completeness', () => {
     const clocks = source.match(/className="focus-session__clock"/g) ?? []
     expect(clocks).toHaveLength(1)
     expect(source).toContain('focus-session__ring-content')
-    // Same reasoning for the animation: the ring is where it lives, so the
+    // Same reasoning for the illustration: the ring is where it lives, so the
     // session face must not also print it above the phase.
     const sessionFace = source.slice(source.indexOf('function SessionPanel'))
     expect(sessionFace).not.toContain('focus-session__animation"')
+  })
+
+  it('uses the bare animation class only on the idle and complete faces', () => {
+    const source = readFileSync(
+      join(ROOT, 'src', 'renderer', 'components', 'FocusSessionTimer.tsx'),
+      'utf8',
+    )
+    // `.focus-session__animation` is the large 120px picture, and it belongs to
+    // the idle face and the complete face. Inside the ring the icon is the
+    // small `--ring` modifier of the same class, which is why the session face
+    // carries the pair and never the bare class. So the large illustration
+    // above the phase label cannot come back without failing this.
+    const bare = source.match(/className="focus-session__animation"/g) ?? []
+    expect(bare).toHaveLength(2)
+    expect(source).toContain('className="focus-session__animation focus-session__animation--ring"')
+
+    const idleFace = source.slice(
+      source.indexOf('function IdlePanel'),
+      source.indexOf('function SetupPanel'),
+    )
+    expect(idleFace).toContain('focus-session__animation"')
   })
 })
 

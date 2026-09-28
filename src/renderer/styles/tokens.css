@@ -98,8 +98,11 @@
   --control-height-compact: 36px;
   --control-radius: var(--rounded-md);
   --control-popover-width: 280px;
-  /* The onboarding panel: a form with one field needs a measure, not the full
-     content width, and no control width means that. */
+  /* The one small-card measure, shared by the two panels whose whole content is
+     a single thing: the onboarding form's one field, and the session panel's one
+     clock. Either needs a measure rather than the full content width, and no
+     control width means that. Reused rather than doubled; see DESIGN.md
+     "Control Sizing". */
   --control-form-width: 420px;
   /* The session ring: 176px across, a 6px arc, so the circle is r=85 and its
      circumference is 2*pi*85 = 534.07. The two must agree or the arc is wrong. */

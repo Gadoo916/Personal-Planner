@@ -87,9 +87,9 @@ export function FocusSessionTimer({ timer }: FocusSessionTimerProps) {
 }
 
 /**
- * The one way in. Two lines, stacked in the panel's own column: the title, then
- * the button under it. No bar, because there is no action to push to the far
- * side, and nothing pretending to be running.
+ * The one way in. Three lines, stacked in the panel's own column: the title, the
+ * idle animation, and the button under them. No bar, because there is no action
+ * to push to the far side, and nothing pretending to be running.
  */
 function IdlePanel({ timer }: { timer: FocusSession }) {
   return (
