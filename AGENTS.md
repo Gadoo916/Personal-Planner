@@ -54,3 +54,8 @@ Check `PROJECT_MAP.md`'s file tables first. Every file, its line count, and
 its role are already listed there. Only search the codebase directly if the
 map genuinely doesn't cover it — and if it doesn't, that's a gap worth
 flagging, not a reason to spend a long time exploring.
+
+
+## Releasing
+When asked to release or ship an update, follow RELEASE.md exactly.
+Never run the publish command yourself; hand it to the user.

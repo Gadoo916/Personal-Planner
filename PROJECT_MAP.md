@@ -3,12 +3,16 @@
 Single source of truth for the Personal Planner codebase. Everything listed here
 exists and works; nothing is aspirational.
 
-**Verification state, 2026-09-27.** `npm run typecheck` and `npm run lint` pass
-clean. `npm test` is 337 of 337 passing across 12 files, and `npm run build`
-succeeds. A paused block now banks its focus once, whole, at the moment the block
-ends, so pausing and resuming a block cannot count the pre-pause segment twice;
-the previously noted paused-time accounting gap is closed and nothing is
-known-red.
+**Verification state, 2026-09-28.** `npm run typecheck` and `npm run lint` pass
+clean. `npm test` is 366 of 366 passing across 15 files, and `npm run build`
+succeeds. Every runtime asset path now resolves against
+`import.meta.env.BASE_URL` instead of being written as `/assets/...`, which the
+dev server serves and a packaged app over `file://` cannot. The ring icon inside
+the progress ring was broken in the packaged build for that reason; see
+[Runtime asset paths](#runtime-asset-paths). The idle face keeps its
+`idle.gif`; the large illustration that used to sit above the running face's
+phase label had already been removed before this, and is now stated explicitly
+in `DESIGN.md` and pinned by `styles.test.ts`.
 
 The packaged artifacts in `release/` are older than any of this: they were
 produced by an earlier `npm run dist` run and a smoke test that launches the
@@ -166,7 +170,7 @@ components/  App.tsx  ──>  domain/  ──>  storage/types
 
 hooks/useDismiss  ──>  (DOM events only, shared by both pickers)
 
-lib/  dates, relativeTime, log  ──>  (leaf utilities, no internal deps)
+lib/  dates, relativeTime, assets, log  ──>  (leaf utilities, no internal deps)
 ```
 
 ### Files
@@ -179,10 +183,10 @@ lib/  dates, relativeTime, log  ──>  (leaf utilities, no internal deps)
 | `src/renderer/storage/web.ts` | 38 | Port implementation over `localStorage`, for `npm run dev` in a browser. |
 | `src/renderer/domain/model.ts` | 303 | `normalizeAppData`, `createTask`, `createReminder`, `nextOccurrence`, the comparators, and `groupTasksByDay` with its `isToday` flag. |
 | `src/renderer/domain/mutations.ts` | 127 | Every write, as a pure `AppData -> AppData` function. |
-| `src/renderer/domain/focusSession.ts` | 319 | Pure session planning: `buildPlan`, `planProgress`, `remainingFocusMinutes`, `formatClock`, `formatDuration`, `phaseLabel`, `focusBlockCount`, the session-length stepper (`sessionLength`, `canStepSession`, `stepSession`), the manual-break stepper on its own five minute grid (`normalizeManualBreakMinutes`, `canStepManualBreak`, `stepManualBreak`), the `FOCUS_SESSION_GIFS` map, and the step and break-length constants. No React, no timers, no IO. |
+| `src/renderer/domain/focusSession.ts` | 333 | Pure session planning: `buildPlan`, `planProgress`, `remainingFocusMinutes`, `formatClock`, `formatDuration`, `phaseLabel`, `focusBlockCount`, the session-length stepper (`sessionLength`, `canStepSession`, `stepSession`), the manual-break stepper on its own five minute grid (`normalizeManualBreakMinutes`, `canStepManualBreak`, `stepManualBreak`), the `FOCUS_SESSION_GIFS` map, and the step and break-length constants. No React, no timers, no IO. |
 | `src/renderer/domain/productivity.ts` | 294 | The stored focus record and everything derived from it: `FocusSessionResult`, the per-day merge, `profileStats`, streak calculation, `focusIntensity`, and the adaptive-comparison growth copy. |
 | `src/renderer/hooks/usePlanner.ts` | 207 | The single reducer, hydration, debounced save, and `pagehide`/`blur` flush. |
-| `src/renderer/hooks/useFocusSession.ts` | 634 | The in-memory session: the face state machine (`idle`, `setup`, `breakSetup`, `session`, plus `finished`), block transitions, an absolute end time so the clock cannot drift, the run totals that survive a reset (focus, break, **and** paused seconds, each in its own column), re-planning rules, and the logging. A paused block banks its focus once at block end, and `settlePause`/`pauseTick` keep paused time out of focus. `focusSessionReducer` and `initialTimerState` are exported so the sequence of states is unit-testable. Never touches storage. Owned by `App`, not by the panel. |
+| `src/renderer/hooks/useFocusSession.ts` | 635 | The in-memory session: the face state machine (`idle`, `setup`, `breakSetup`, `session`, plus `finished`), block transitions, an absolute end time so the clock cannot drift, the run totals that survive a reset (focus, break, **and** paused seconds, each in its own column), re-planning rules, and the logging. A paused block banks its focus once at block end, and `settlePause`/`pauseTick` keep paused time out of focus. `focusSessionReducer` and `initialTimerState` are exported so the sequence of states is unit-testable. Never touches storage. Owned by `App`, not by the panel. |
 | `src/renderer/hooks/useDismiss.ts` | 30 | Escape and outside-press dismissal, shared by both pickers. |
 | `src/renderer/lib/dates.ts` | 218 | Local date maths, ISO validation, 12-hour clock formatting, day labels, the calendar grid, and the time-picker helpers. |
 | `src/renderer/lib/relativeTime.ts` | 52 | `remainingTime` via `Intl.RelativeTimeFormat`, plus `isOverdue` and `isPastDay`. |
@@ -192,7 +196,7 @@ lib/  dates, relativeTime, log  ──>  (leaf utilities, no internal deps)
 | `src/renderer/components/TimePicker.tsx` | 92 | Hour / minute / meridiem controls in a popover, built on the shared `Stepper`. Replaces `input[type="time"]`. |
 | `src/renderer/components/PlannerColumn.tsx` | 56 | One column: the title and its own Add on a single header row, and the inline composer slot. Both columns are this component. |
 | `src/renderer/components/BottomNavigation.tsx` | 36 | The whole of the app's navigation: a `<nav>` of exactly three destinations (Home, Profile, Focus Session), each a bare `<button>` marking itself with `aria-current="page"`. Exports the `AppView` union that `App` holds. |
-| `src/renderer/components/FocusSessionTimer.tsx` | 470 | The session panel in five faces: `IdlePanel` (the title, `idle.gif` animation, and a `Focus` button), `SetupPanel` (the session length as two `Wheel` columns, then the break choices), `BreakSetupPanel` (one `Wheel` on the five minute grid), `SessionPanel` (state-mapped GIF animation in the ring, ring, clock, three icon-only controls — Pause, Skip, and the inline reset confirmation, all live on a manual break — a `Paused for m:ss` line shown only while stopped, and `Take a Break` below them), and `CompletePanel` (the summary card with its focus, break, and paused figures, the completed block count, and `Done`). A renderer: it takes a `FocusSession` rather than owning one. |
+| `src/renderer/components/FocusSessionTimer.tsx` | 470 | The session panel in five faces: `IdlePanel` (the title, the `idle.gif` animation, and a `Focus` button), `SetupPanel` (the session length as two `Wheel` columns, then the break choices), `BreakSetupPanel` (one `Wheel` on the five minute grid), `SessionPanel` (the phase label with **nothing drawn above it**, the state-mapped GIF inside the ring, ring, clock, three icon-only controls — Pause, Skip, and the inline reset confirmation, all live on a manual break — a `Paused for m:ss` line shown only while stopped, and `Take a Break` below them), and `CompletePanel` (the summary card with its focus, break, and paused figures, the completed block count, and `Done`). A renderer: it takes a `FocusSession` rather than owning one. |
 | `src/renderer/components/AddForm.tsx` | 168 | The inline composer, contextual to its column, for both adding and editing. |
 | `src/renderer/components/TaskList.tsx` | 145 | Day groups, completion toggle, edit, and two-step delete. |
 | `src/renderer/components/ReminderList.tsx` | 106 | Reminder cards with countdown and overdue state. |
@@ -204,11 +208,11 @@ lib/  dates, relativeTime, log  ──>  (leaf utilities, no internal deps)
 | `src/renderer/hooks/useUpdates.ts` | 56 | Subscribes to `window.updates`, holds the dismissal, and returns the one action the banner offers. No polling and no fetch. |
 | `src/renderer/App.tsx` | 175 | Composition: the current view, the lifted focus-session clock, the three view bodies, the composer open/close state, the update banner above Home, and the navigation bar. |
 | `src/renderer/main.tsx` | 18 | React mount. |
-| `src/renderer/styles/tokens.css` | 121 | The only place a hex, radius, or spacing value may appear. |
+| `src/renderer/styles/tokens.css` | 124 | The only place a hex, radius, or spacing value may appear. |
 | `src/renderer/styles/base.css` | 59 | Reset, page shell, and font stack. |
 | `src/renderer/styles/ui.css` | 596 | Reusable component classes, including the pickers, the stepper rows, the wheel columns, and the choice groups. |
-| `src/renderer/styles/app.css` | 955 | Screen composition — the shell, the update banner, the navigation bar, the session panel, the 7:3 grid, the Profile, the columns, the composer — and the responsive breakpoints. |
-| `src/renderer/styles.test.ts` | 595 | Enforces the token rules, the session panel's five faces, its length wheels, the summary card, the column header's single row, the navigation bar's fixed treatment, the Profile's lack of a layer, the update banner's in-flow treatment, and keeps `DESIGN.md` in sync with `tokens.css`. |
+| `src/renderer/styles/app.css` | 963 | Screen composition — the shell, the update banner, the navigation bar, the session panel, the 7:3 grid, the Profile, the columns, the composer — and the responsive breakpoints. |
+| `src/renderer/styles.test.ts` | 657 | Enforces the token rules, the session panel's five faces, its length wheels, the summary card, the column header's single row, the navigation bar's fixed treatment, the Profile's lack of a layer, the update banner's in-flow treatment, and keeps `DESIGN.md` in sync with `tokens.css`. |
 | `src/main/index.js` | 101 | Window lifecycle, single-instance lock, navigation lockdown, the two storage IPC handlers, and the one call that starts the update check. |
 | `src/main/updater.js` | 121 | The whole update path: one `checkForUpdates` per launch, the two state events, silent de-duplicated failure logging, the replay for a late subscriber, and the install request. |
 | `src/main/updater.test.js` | 194 | The updater contract, with `electron-updater` mocked and the module re-imported per test. |
@@ -218,8 +222,9 @@ lib/  dates, relativeTime, log  ──>  (leaf utilities, no internal deps)
 | `scripts/dev-desktop.mjs` | 31 | Starts Vite via its Node API, then spawns Electron. |
 | `scripts/make-icon.mjs` | 198 | Draws and encodes `build/icon.ico` from the accent token. |
 | `build/icon.ico` | 5 KB | Seven sizes, 16 through 256. Committed, because electron-builder needs it. |
-| `DESIGN.md` | 1846 | The authoritative design-system document: every token, every component, and the rules. |
-| `public/assets/focus-session/` | 5 files | Local GIF assets for the Focus Session state machine (`idle.gif`, `focus.gif`, `break.gif`, `complete.gif`) and the completion sound (`session-complete.mp3`). |
+| `DESIGN.md` | 1918 | The authoritative design-system document: every token, every component, and the rules. |
+| `public/assets/focus-session/` | 5 files | Local GIF assets for the Focus Session state machine (`idle.gif`, `focus.gif`, `break.gif`, `complete.gif`) and the completion sound (`session-complete.mp3`). `focus.gif` is the one drawn *inside* the ring, at `object-fit: contain` in a 176px square, so its landscape canvas is letterboxed rather than cropped. |
+| `src/renderer/lib/assets.ts` | 34 | `assetUrl`, the one way a renderer module names a file in `public/`. Resolves against `import.meta.env.BASE_URL`, so the same path is correct under the dev server and under a `file://` build. |
 
 ### Design System
 
@@ -290,7 +295,11 @@ stacked under it, both **centred in the panel** — `align-items: center` on
 outranks `align-items` and would pin the title to the left of an otherwise centred
 face. There is **no clock, no ring, no progress, and no line of guidance** in that
 state: the panel is a band, not an alert surface, and a guidance paragraph would
-be doing the work of the button. `Focus` opens the setup in the same container —
+be doing the work of the button. The running face draws **no** illustration
+above the phase label: the large `.focus-session__animation` picture belongs to
+the idle and complete faces only, and a running session shows the state-mapped
+GIF **inside the ring** at the `--ring` size, so the figure is never on screen
+twice. `Focus` opens the setup in the same container —
 no page, no modal, no tab — where the session length is two `Wheel` columns side
 by side, hours and minutes, read the way a phone reads an alarm time: the chosen
 value in the middle of each column in the display step, the plus stacked above it
@@ -417,13 +426,15 @@ whole of its network surface:
 
 ### Test coverage
 
-358 tests across fourteen files, all passing. The paused-time cases assert that
-paused seconds are banked in their own column and never as focus, that a
-paused-then-resumed block banks its focus exactly once, and that Pause, Resume,
-and Skip all work on a manual break. The updater cases assert that one launch
-produces one check, that a failure reaches the log exactly once and the window
-not at all, and that installation happens only on request and only once the
-download is finished.
+366 tests across fifteen files, all passing. The asset-path cases stub
+`BASE_URL` to `./` and assert the resulting URL is relative, which is the
+packaged-build case the dev server can never reproduce. The paused-time cases
+assert that paused seconds are banked in their own column and never as focus,
+that a paused-then-resumed block banks its focus exactly once, and that Pause,
+Resume, and Skip all work on a manual break. The updater cases assert that one
+launch produces one check, that a failure reaches the log exactly once and the
+window not at all, and that installation happens only on request and only once
+the download is finished.
 
 | File | Tests | Covers |
 | --- | --- | --- |
@@ -432,13 +443,14 @@ download is finished.
 | `domain/productivity.test.ts` | 26 | The stored Focus Session record, its merge, and every derived day figure. |
 | `lib/dates.test.ts` | 37 | Leap days, month rollovers, ISO validation, 12-hour formatting, the 42-cell grid, and the clock helpers. |
 | `App.test.tsx` | 65 | Both user flows end to end, screen composition, the navigation bar and the three views, a running session surviving navigation, the Profile as a view, the session panel's five faces, the length wheels, the reset confirmation, the column headers, ordering, persistence, and the update banner appearing on Home alone. |
-| `domain/focusSession.test.ts` | 37 | Block splitting, the fourth-break rule, trimming, progress, formatting, the session-length stepper, the manual-break stepper's five minute grid, and the focus-block count. |
+| `domain/focusSession.test.ts` | 37 | Block splitting, the fourth-break rule, trimming, progress, formatting, the session-length stepper, the manual-break stepper's five minute grid, the focus-block count, and the GIF state mapping. |
 | `hooks/useFocusSession.test.ts` | 42 | The state machine alone: when a clock starts and stops, absolute-deadline countdowns, auto-advance, the manual break, pausing and skipping a manual break, paused-time accounting in its own column, and when the run totals are banked or forgotten. |
 | `components/FocusSessionTimer.test.tsx` | 11 | The GIF state mapping in the DOM, the manual break reading as a break, Pause and Skip staying live on a manual break, the paused counter appearing only while paused, the summary's three figures, and the summary plus `Done`. A local harness owns the clock, since the panel only renders one. |
 | `components/pickers.test.tsx` | 19 | No native inputs, the month grid, month paging, dismissal, and every stepper. |
 | `components/UpdateBanner.test.tsx` | 7 | The banner's two states, that no install is possible before the download finishes, that install fires only on a press, that a dismissal stays dismissed, and that no bridge at all is a no-op. |
 | `lib/relativeTime.test.ts` | 15 | Every countdown bucket, past and future. |
-| `styles.test.ts` | 32 | Design-system enforcement, the 7:3 grid, the ring's geometry, the idle face's centred column, the summary card's tokens, the length wheels, the column header's single row, the choice groups' minimal treatment, the bar's fixed treatment, the Profile having no layer, the update banner being a block in the flow, and `DESIGN.md` staying in sync with the tokens. |
+| `lib/assets.test.ts` | 5 | The dev base and the `./` build base, that a build's asset URL is never root-absolute, and that a leading slash is optional. |
+| `styles.test.ts` | 35 | Design-system enforcement, the 7:3 grid, the ring's geometry, the idle face's centred column, the session card's compact measure and both-axis centring, the card appearing on the Focus view alone, the large animation class being confined to the idle and complete faces, the summary card's tokens, the length wheels, the column header's single row, the choice groups' minimal treatment, the bar's fixed treatment, the Profile having no layer, the update banner being a block in the flow, and `DESIGN.md` staying in sync with the tokens. |
 | `main/updater.test.js` | 11 | The one-check-per-launch guard, the unpackaged skip, both state transitions, the replay for a late subscriber, install only on request and only when downloaded, and a failed check reaching the log once while telling the window nothing. |
 | `storage/web.test.ts` | 6 | Round trip, corrupt input, and a rejected write. |
 
@@ -467,6 +479,32 @@ independently of the `files` globs.
 
 Data lives in `%APPDATA%\Personal Planner\planner-data.json`, created on the
 first change rather than at first launch.
+
+### Runtime asset paths
+
+Vite copies `public/` into `dist/` and rewrites only the URLs it can see: an ES
+import, a `new URL(..., import.meta.url)`, a reference in the HTML, a `url()` in
+a stylesheet. **A path written as a plain string in a JavaScript module is none
+of those**, so it is emitted exactly as written and nothing checks it. Every
+runtime asset — the three session GIFs and the completion sound — therefore goes
+through `assetUrl` in `lib/assets.ts`, which prefixes it with
+`import.meta.env.BASE_URL`.
+
+This was a real bug, not a style preference. Written as
+`/assets/focus-session/focus.gif`, the dev server served it correctly and the
+packaged app showed a broken image with its alt text instead. `base: './'` in
+`vite.config.ts` was already right, and it fixed `index.html`'s own references
+and nothing else: a leading `/` on a `file://` document is a **filesystem** root,
+so the request resolved against the drive the app happened to be launched from
+and could not find the file. The dev server cannot catch this, because its base
+and the broken one look identical there. `assetUrl` yields `/assets/...` under
+the dev server and `./assets/...` in a build, and `lib/assets.test.ts` pins both
+by stubbing `BASE_URL` — the only way to test the packaged case without a build.
+
+`build.files` includes `dist/**/*`, and Vite has already copied `public/` into
+`dist` by then, so the assets are inside `app.asar` without being named there.
+Electron's `file://` reads through the asar, so a relative URL resolves inside
+the archive.
 
 ### Publishing a release
 
@@ -500,7 +538,7 @@ npm run dist        # build + NSIS installer + portable binary
 npm run publish     # the same, and upload a GitHub Release (manual, on purpose)
 ```
 
-`npm run verify` is the gate a change has to pass: 358 tests, lint, and both
+`npm run verify` is the gate a change has to pass: 366 tests, lint, and both
 TypeScript projects, including `styles.test.ts`, which fails the build if
 `DESIGN.md` and `tokens.css` drift apart or if a raw colour, radius, or shadow
 appears anywhere else.
@@ -590,7 +628,9 @@ requirement is implemented and covered:
 | The Profile is a view, not a dialog: no backdrop, no Close | `Profile.tsx` | `App.test.tsx`, `styles.test.ts` |
 | The welcome band holds no Profile shortcut | `Welcome.tsx` | `App.test.tsx` |
 | Session panel with idle, setup, break-setup, running, and complete views | `FocusSessionTimer.tsx`, `useFocusSession`, `domain/focusSession.ts` | `App.test.tsx`, `focusSession.test.ts`, `useFocusSession.test.ts`, `FocusSessionTimer.test.tsx` |
-| Idle face is the title and a stacked `Focus` button, no clock | `IdlePanel`, `.focus-session--idle` | `App.test.tsx`, `styles.test.ts` |
+| Idle face is the title, the `idle.gif` animation, and a stacked `Focus` button, no clock | `IdlePanel`, `.focus-session--idle` | `App.test.tsx`, `styles.test.ts` |
+| The running face draws nothing above the phase label; the GIF is inside the ring only | `SessionPanel`, `focus-session__animation--ring` | `styles.test.ts` |
+| Runtime assets load in the dev server **and** in the packaged app | `assetUrl` in `lib/assets.ts`, `base: './'` | `lib/assets.test.ts`, packaged launch smoke test |
 | Focus Session content centred in its own container | `.focus-session--idle`, `.focus-session__bar` | `styles.test.ts` |
 | Session length 25–720 minutes, read as two wheel columns, no native input | `Wheel`, `stepSession` | `App.test.tsx`, `focusSession.test.ts`, `styles.test.ts` |
 | Every fourth break is long | `buildPlan`, `LONG_BREAK_EVERY` | `focusSession.test.ts` |
