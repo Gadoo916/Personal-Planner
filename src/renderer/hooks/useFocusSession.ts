@@ -8,6 +8,7 @@ import {
   type FocusSessionSettings,
 } from '../domain/focusSession'
 import type { FocusSessionResult } from '../domain/productivity'
+import { assetUrl } from '../lib/assets'
 import { log } from '../lib/log'
 
 /** Short enough that the clock never visibly lags, long enough to stay cheap. */
@@ -485,7 +486,7 @@ export function useFocusSession(options?: UseFocusSessionOptions): FocusSession 
   useEffect(() => {
     if (state.finished && !completionSoundPlayed.current) {
       completionSoundPlayed.current = true
-      const audio = new Audio('/assets/focus-session/session-complete.mp3')
+      const audio = new Audio(assetUrl('/assets/focus-session/session-complete.mp3'))
       audio.volume = 0.03
       audio.play()?.catch(() => {})
     }

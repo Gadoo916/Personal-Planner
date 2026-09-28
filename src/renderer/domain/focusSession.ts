@@ -8,6 +8,8 @@
  * the final block.
  */
 
+import { assetUrl } from '../lib/assets'
+
 export type FocusSessionPhase = 'focus' | 'break'
 
 /** One focus block plus, where the session continues, the break that follows. */
@@ -293,14 +295,26 @@ export function remainingFocusMinutes(
   return Math.max(0, after + currentLeft)
 }
 
+/**
+ * The illustrations the session panel draws: the idle face's own picture, the
+ * one inside the progress ring, and the complete face's celebration. Paths are
+ * resolved through `assetUrl` rather than written as `/assets/...`, because a
+ * bare leading slash resolves against the filesystem root under `file://` and
+ * 404s in a packaged app. See `lib/assets.ts`.
+ */
 export const FOCUS_SESSION_GIFS = {
-  idle: '/assets/focus-session/idle.gif',
-  focus: '/assets/focus-session/focus.gif',
-  break: '/assets/focus-session/break.gif',
-  complete: '/assets/focus-session/complete.gif',
+  idle: assetUrl('/assets/focus-session/idle.gif'),
+  focus: assetUrl('/assets/focus-session/focus.gif'),
+  break: assetUrl('/assets/focus-session/break.gif'),
+  complete: assetUrl('/assets/focus-session/complete.gif'),
 } as const
 
-/** Returns the matching GIF asset path based on the current Focus Session view, phase, and finish state. */
+/**
+ * The GIF for the current state, from the view, the phase, and whether the run
+ * is over. The idle and setup views share the idle face's illustration; a
+ * running session maps to the ring's small icon, and a finished one to the
+ * celebration.
+ */
 export function getFocusSessionGif(options: {
   view?: 'idle' | 'setup' | 'session'
   phase?: FocusSessionPhase | null
